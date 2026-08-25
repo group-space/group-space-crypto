@@ -1,0 +1,46 @@
+{
+  "name": "@group-space/crypto-core",
+  "version": "0.1.0",
+  "private": false,
+  "description": "The end-to-end encryption core of Group Space: field AEAD with context binding, the account keychain protocol, and the encrypted media container - extracted so the code that guards content can be read, tested, and rebuilt by anyone.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./e2ee": "./src/e2ee.ts",
+    "./account-keys": "./src/account-keys.ts",
+    "./aad": "./src/aad.ts",
+    "./media-format": "./src/media-format.ts",
+    "./media-range": "./src/media-range.ts",
+    "./sw-decrypt": "./sw/decrypt.ts"
+  },
+  "dependencies": {
+    "@stablelib/xchacha20poly1305": "^2.0.1",
+    "libsodium-wrappers-sumo": "^0.8.4"
+  },
+  "devDependencies": {
+    "@types/libsodium-wrappers-sumo": "^0.7.8",
+    "@types/node": "^26.3.0",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  },
+  "license": "Apache-2.0",
+  "sideEffects": false,
+  "files": [
+    "src",
+    "sw",
+    "docs",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:crypto && npm run test:rewrap && npm run test:media-range && npm run test:interop",
+    "test:crypto": "tsx test/crypto-selftest.mts",
+    "test:rewrap": "tsx test/rewrap-selftest.mts",
+    "test:media-range": "tsx test/media-range-selftest.mts",
+    "test:interop": "tsx test/sw-crypto-interop.mts",
+    "test:vectors": "tsx test/vectors-selftest.mts",
+    "vectors:generate": "tsx test/generate-vectors.mts"
+  }
+}

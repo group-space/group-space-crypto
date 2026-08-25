@@ -1,0 +1,27 @@
+name: CI
+
+# Every push and PR: typecheck, the four suites, and the vectors. The vectors
+# job is the wire-format freeze made enforceable — a vector that stops passing
+# means stored blobs in real deployments just got orphaned, and that is a
+# red build, not a fixture refresh.
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:vectors

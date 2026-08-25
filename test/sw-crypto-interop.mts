@@ -1,0 +1,65 @@
+/**
+ * Proves the service worker can decrypt (with @stablelib) exactly what the app
+ * encrypts (with libsodium). Both implement IETF XChaCha20-Poly1305; this asserts
+ * they interoperate on real ciphertext + AAD produced by our own e2ee core, so
+ * the SW-side rich-push decrypt can be trusted even though push itself is only
+ * testable on a device.
+ *
+ * Run with:  npx tsx scripts/sw-crypto-interop.mts
+ */
+import { XChaCha20Poly1305 } from "@stablelib/xchacha20poly1305";
+import * as e2ee from "../src/e2ee.ts";
+
+let pass = 0;
+let fail = 0;
+function ok(cond: boolean, msg: string) {
+  if (cond) { pass++; console.log("  ✓", msg); }
+  else { fail++; console.log("  ✗ FAIL:", msg); }
+}
+
+// Use sodium directly for the base64 helpers so we compare against the exact
+// bytes the app stores.
+const { getSodium } = await import("../src/sodium.ts");
+const sodium = await getSodium();
+const b64 = (s: string) => sodium.from_base64(s, sodium.base64_variants.ORIGINAL);
+
+console.log("libsodium → @stablelib interop:");
+
+// Encrypt a field exactly like the app does (Group Key + context AAD).
+const groupKey = await e2ee.generateGroupKey();
+const aad = "discussion.post.body";
+const plaintext = "Can someone cover carpool Friday? 🚗";
+const field = await e2ee.encryptField(groupKey, plaintext, aad);
+
+// Now decrypt with @stablelib, the way the service worker will: raw group-key
+// bytes + nonce + ciphertext(+tag) + AAD-as-utf8.
+const key = b64(groupKey);
+const nonce = b64(field.nonce);
+const ct = b64(field.ciphertext);
+const aead = new XChaCha20Poly1305(key);
+const opened = aead.open(nonce, ct, new TextEncoder().encode(aad));
+ok(opened !== null, "stablelib opens libsodium ciphertext");
+ok(opened !== null && new TextDecoder().decode(opened) === plaintext, "recovered plaintext matches");
+
+// Wrong AAD must be rejected (context binding holds across implementations).
+const bad = aead.open(nonce, ct, new TextEncoder().encode("wrong.aad"));
+ok(bad === null, "wrong AAD is rejected");
+
+// Tamper → rejected.
+const tampered = ct.slice();
+tampered[tampered.length - 1] ^= 1;
+ok(aead.open(nonce, tampered, new TextEncoder().encode(aad)) === null, "tampered ciphertext is rejected");
+
+// And the reverse direction: @stablelib seal → libsodium/app decryptField opens.
+const key2 = await e2ee.generateGroupKey();
+const aead2 = new XChaCha20Poly1305(b64(key2));
+const nonce2 = sodium.randombytes_buf(24);
+const sealed = aead2.seal(nonce2, new TextEncoder().encode("hi from the SW"), new TextEncoder().encode(aad));
+const field2 = {
+  nonce: sodium.to_base64(nonce2, sodium.base64_variants.ORIGINAL),
+  ciphertext: sodium.to_base64(sealed, sodium.base64_variants.ORIGINAL),
+};
+ok((await e2ee.decryptField(key2, field2, aad)) === "hi from the SW", "app opens stablelib ciphertext (reverse)");
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);
