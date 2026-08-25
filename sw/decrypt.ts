@@ -1,5 +1,5 @@
 /**
- * Decrypt-only client for restricted runtimes — service workers, notification
+ * Decrypt-only client for restricted runtimes: service workers, notification
  * extensions, anything that must open ciphertext without carrying libsodium.
  *
  * ## Why a second implementation exists at all
@@ -10,7 +10,7 @@
  * XChaCha20-Poly1305 instead. Two implementations of one cipher is a real
  * risk, which is why the interop suite drives BOTH directions against shared
  * test vectors: libsodium's seal must open here, and a seal produced here (in
- * tests only — this module deliberately exports no seal) must open there.
+ * tests only, since this module deliberately exports no seal) must open there.
  *
  * Everything in this file is decrypt-only on purpose. A worker holds keys to
  * REVEAL content a device is entitled to; it composes nothing, so shipping it
@@ -40,7 +40,7 @@ export function b64ToBytes(s: string): Uint8Array {
 
 /**
  * Open one `{ciphertext, nonce, aad}` field with a raw 32-byte key. Returns
- * the plaintext string, or null on ANY failure — a worker showing a
+ * the plaintext string, or null on ANY failure. A worker showing a
  * notification has no better move than falling back to generic copy, so the
  * failure mode is a value, not an exception.
  */

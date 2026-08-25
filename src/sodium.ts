@@ -1,8 +1,8 @@
-// The "sumo" build is required for Argon2id (crypto_pwhash) — the standard build
+// The "sumo" build is required for Argon2id (crypto_pwhash); the standard build
 // omits it. Larger wasm, but Argon2id is central to our key-wrapping design.
 //
 // libsodium (~½ MB of embedded wasm) is loaded via a dynamic import so it lands
-// in its own async chunk, fetched only when a crypto operation actually runs —
+// in its own async chunk, fetched only when a crypto operation actually runs,
 // never in the main bundle of pages that don't touch encryption. The type is
 // imported separately with `import type`, which is erased and carries no runtime
 // cost.

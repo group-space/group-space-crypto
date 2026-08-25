@@ -1,5 +1,5 @@
 /**
- * Generate the committed test vectors — run ONCE per format version, never
+ * Generate the committed test vectors. Run this ONCE per format version, never
  * casually.
  *
  *   npx tsx test/generate-vectors.mts > test/vectors/v1.json
@@ -15,7 +15,7 @@
  *    `encryptBytesWithNonces`) record exact expected ciphertext. Both the seal
  *    and the open direction are pinned forever.
  *  - **Randomized seals** (Argon2id wraps, sealed-box grants) cannot promise
- *    bytes — salt and nonce are drawn fresh each time, and libsodium's sealed
+ *    bytes: salt and nonce are drawn fresh each time, and libsodium's sealed
  *    box has no seeded variant. For those the vector records ONE historical
  *    output, and pins the OPEN direction: this recorded wrap, under this
  *    password, must yield this secret, in any correct implementation, forever.
@@ -80,7 +80,7 @@ const containers = [
 
 // --- randomized wraps: record one output, pin the open ----------------------
 const PASSWORD = "correct horse battery staple";
-// wrapSecret takes (secret BYTES, passphrase) — in that order. The first cut of
+// wrapSecret takes (secret BYTES, passphrase), in that order. The first cut of
 // this generator had them swapped and produced a "vector" that Argon2id'd the
 // secret as if it were a password; the suite caught it by failing to open.
 const SECRET_BYTES = pattern(32, 53);

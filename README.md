@@ -2,13 +2,13 @@
 
 The end-to-end encryption core of [Group Space](https://group-space.com):
 field encryption with context binding, the account keychain protocol, and the
-chunked encrypted media container — extracted from the app so the code that
+chunked encrypted media container, extracted from the app so the code that
 guards content can be read, tested, and rebuilt by anyone.
 
 **This is composition, not invention.** Every primitive is libsodium (and,
 for the decrypt-only worker client, @stablelib's XChaCha20-Poly1305). The
 design work is the key hierarchy, the AAD context registry, and the frozen
-wire formats — all specified in [`docs/protocol.md`](docs/protocol.md)
+wire formats. All of it is specified in [`docs/protocol.md`](docs/protocol.md)
 precisely enough to reimplement from the page and verify against the
 committed vectors.
 
@@ -18,7 +18,7 @@ committed vectors.
 | --- | --- |
 | `.` / `./e2ee` | primitives: passphrase wraps (Argon2id), keypairs, grants (sealed boxes), field AEAD, the media container |
 | `./account-keys` | the account keychain: enrollment, recovery kit, membership rewrap |
-| `./aad` | the context-label registry — every label unique, labels only ever added |
+| `./aad` | the context-label registry. Every label unique, labels only ever added |
 | `./media-format` | the frozen wire constants |
 | `./media-range` | pure range arithmetic over the container geometry |
 | `./sw-decrypt` | decrypt-only client for service workers: no WASM, no sealer, @stablelib underneath |
@@ -36,7 +36,7 @@ npm run typecheck && npm test && npm run test:vectors
 `test/vectors/v1.json` is the wire-format contract: deterministic seals with
 frozen digests, recorded randomized wraps that must open forever, and both
 implementations driven against the same bytes. `docs/verify.md` explains what
-each verification tier proves — and what it deliberately does not claim.
+each verification tier proves, and what it deliberately does not claim.
 
 ## What this is not
 

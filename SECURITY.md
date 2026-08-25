@@ -4,7 +4,7 @@
 
 Email **security@group-space.com** with enough detail to reproduce. We would
 rather receive a duplicate, a false alarm, or a doc nitpick than not receive a
-real one — reports that the documentation claims more than the code delivers
+real one. Reports that the documentation claims more than the code delivers
 are in scope and welcome.
 
 Please do not open a public issue for anything you believe is exploitable
@@ -14,7 +14,7 @@ before we have had a chance to respond. We aim to acknowledge within 72 hours.
 
 - The protocol and its implementation in this repository (`src/`, `sw/`).
 - The published npm artifacts and their provenance chain.
-- The claims made in `docs/` — an overclaim is a vulnerability in the
+- The claims made in `docs/`. An overclaim is a vulnerability in the
   documentation.
 
 Out of scope here (report to the same address, different tracker): the Group

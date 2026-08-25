@@ -17,13 +17,13 @@ export { MEDIA_CHUNK_SIZE, FRAME_OVERHEAD_BYTES, FULL_FRAME_BYTES };
  *
  * The container was built for better than that. `e2ee.ts` says so:
  *
- *   > the client fetches a byte range, splits the nonce, and decrypts —
+ *   > the client fetches a byte range, splits the nonce, and decrypts,
  *   > enabling seek/streaming without the server ever seeing plaintext
  *
  * Every chunk is sealed independently with its own nonce and its index bound as
  * AAD, and every frame but the last is exactly {@link FULL_FRAME_BYTES}. So the
  * map from a plaintext byte range to the ciphertext frames covering it is exact
- * arithmetic — no index, no manifest, no format change.
+ * arithmetic: no index, no manifest, no format change.
  *
  * This module is that arithmetic, and nothing else. It is pure and free of
  * crypto, DOM and network on purpose: it is the part that is easy to get subtly
@@ -41,7 +41,7 @@ export { MEDIA_CHUNK_SIZE, FRAME_OVERHEAD_BYTES, FULL_FRAME_BYTES };
  *
  * Derivable because full frames are a fixed size and only the last may be
  * short. A remainder of zero means the final chunk happened to be exactly full.
- * An empty file is one empty frame — 40 bytes of pure overhead — which lands
+ * An empty file is one empty frame (40 bytes of pure overhead), which lands
  * correctly here rather than needing a special case.
  *
  * Returns null for a length that cannot be a valid container.
@@ -62,7 +62,7 @@ export function cipherLength(plainLength: number): number {
   const fullChunks = Math.floor(plainLength / MEDIA_CHUNK_SIZE);
   const tail = plainLength - fullChunks * MEDIA_CHUNK_SIZE;
   // When the length divides exactly there is no short trailing frame, unless
-  // the file is empty — which still has one (empty) frame.
+  // the file is empty, which still has one (empty) frame.
   if (plainLength > 0 && tail === 0) return chunks * FULL_FRAME_BYTES;
   return fullChunks * FULL_FRAME_BYTES + (tail + FRAME_OVERHEAD_BYTES);
 }
@@ -74,7 +74,7 @@ export interface ChunkRange {
   lastChunk: number;
   /** Byte offset of `firstChunk`'s frame in the ciphertext. */
   cipherStart: number;
-  /** Last ciphertext byte needed, inclusive — ready for a Range header. */
+  /** Last ciphertext byte needed, inclusive, ready for a Range header. */
   cipherEnd: number;
   /** Where the answer begins within the decrypted chunk run. */
   sliceOffset: number;
@@ -89,7 +89,7 @@ export interface ChunkRange {
  * The caller fetches ciphertext `[cipherStart, cipherEnd]`, splits it into
  * frames, decrypts chunks `firstChunk..lastChunk`, concatenates, then slices at
  * `sliceOffset` for `sliceLength`. Almost every request is unaligned at both
- * ends — a player asks for whatever its buffer wants — so the slice is the
+ * ends (a player asks for whatever its buffer wants), so the slice is the
  * normal case, not an edge case.
  *
  * Returns null if the range cannot be satisfied.
@@ -107,7 +107,7 @@ export function chunkRangeFor(
   const lastChunk = Math.floor(clampedEnd / MEDIA_CHUNK_SIZE);
   const cipherStart = firstChunk * FULL_FRAME_BYTES;
   // The end of the LAST needed frame. That frame may be the short trailing one,
-  // so clamp to the container rather than assuming a full frame — over-asking
+  // so clamp to the container rather than assuming a full frame. Over-asking
   // would request bytes past the object and a strict store 416s.
   const cipherEnd = Math.min(
     (lastChunk + 1) * FULL_FRAME_BYTES - 1,

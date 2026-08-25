@@ -4,7 +4,7 @@ This document specifies what the library in `src/` implements, precisely enough
 that an independent implementation can be written from this page and verified
 against the committed test vectors (`test/vectors/v1.json`) without running our
 code. Where this document and the code disagree, the code and its vectors are
-the protocol and this document has a bug — please report it.
+the protocol and this document has a bug. Please report it.
 
 **Format v1 is frozen.** Every constant, layout, and serialized shape below is
 load-bearing for ciphertext already at rest in real deployments. A change to
@@ -53,12 +53,12 @@ password ──Argon2id──▶ wrapping key ──AEAD──▶ member/account
 - Each member (and each account, in the multi-group platform) holds an
   **X25519 keypair**. The public key is stored in the clear; the private key is
   stored only as a `WrappedSecret` (§4) under the holder's password.
-- A **grant** is `crypto_box_seal(groupKey, recipientPublicKey)` — anonymous
+- A **grant** is `crypto_box_seal(groupKey, recipientPublicKey)`, anonymous
   sealing: anyone can produce a grant, only the holder of the matching private
   key can open it. This one asymmetry powers admission, re-approval, and
   directed pre-approved invites.
 
-## 4. `WrappedSecret` — passphrase wrapping
+## 4. `WrappedSecret`: passphrase wrapping
 
 A symmetric secret (a private key, a Group Key) wrapped under a passphrase:
 
@@ -103,7 +103,7 @@ is deliberately rare.
 
 ## 6. The encrypted media container
 
-Large binaries (photos, video) are sealed under a **per-file key** — 32 random
+Large binaries (photos, video) are sealed under a **per-file key** of 32 random
 bytes, itself wrapped under the Group Key as a field with AAD `"filekey"`
 (§5). Per-file keys are what make a future single-file re-share or expiry
 cheap: revoking or expiring one file never touches another's key.
@@ -139,7 +139,7 @@ plaintext → frame span of the ciphertext, and back.
 
 A recovery code is 40 characters from the 32-character alphabet
 `ABCDEFGHJKMNPQRSTVWXYZ0123456789` (no I, L, O, U), displayed as 8 groups of 5
-separated by dashes — 200 bits. Before use it is **normalized**: uppercased,
+separated by dashes, for 200 bits. Before use it is **normalized**: uppercased,
 and every character outside `[A-Z0-9]` removed, so re-typing with different
 dashes or case still opens the wrap. The normalized string is the passphrase
 for a standard `WrappedSecret` (§4) over the protected secret.
@@ -154,13 +154,13 @@ The following can never change within format v1:
 - the primitives and their parameters' *meaning* (§1),
 - the base64 variant (§2),
 - the `WrappedSecret` and `SealedField` shapes (§4, §5),
-- every AAD label already in the registry (`src/aad.ts`) — labels may be
+- every AAD label already in the registry (`src/aad.ts`); labels may be
   **added**, never renamed or removed,
 - every constant in §6, and the frame layout,
 - the recovery alphabet and normalization (§7).
 
 A hypothetical format v2 would be a new container/envelope version negotiated
-explicitly, shipped alongside v1 readers — and is out of scope until a
+explicitly, shipped alongside v1 readers, and is out of scope until a
 cryptographic break forces it. The committed vectors are the enforcement: a
 vector that stops passing is a format break, and CI treats it as one.
 
@@ -170,5 +170,5 @@ vector that stops passing is a format break, and CI treats it as one.
   unlocked, and what "signed out" means are application decisions.
 - **No transport.** Nothing here talks to a network.
 - **No metadata protection.** Object sizes, timing, and who-holds-which-grant
-  are visible to whoever runs the server. See `docs/threat-model.md` — the
+  are visible to whoever runs the server. See `docs/threat-model.md`. Those
   limits are part of the protocol's honest description, not a footnote.

@@ -5,8 +5,8 @@
  *
  * The headline test is a PROPERTY test, not a set of examples: encrypt real
  * blobs, then for a spread of ranges walk the whole path a service worker would
- * walk — map the range to frames, slice the ciphertext, decrypt those chunks,
- * concatenate, slice — and assert the bytes equal the plaintext slice. Off by
+ * walk (map the range to frames, slice the ciphertext, decrypt those chunks,
+ * concatenate, slice) and assert the bytes equal the plaintext slice. Off by
  * one frame and the player receives plausible-looking garbage rather than an
  * error, which is exactly the class of bug that survives example-based tests.
  */
@@ -91,7 +91,7 @@ async function serveRange(
   // The byte range a Range request would return.
   const slice = cipher.subarray(r.cipherStart, r.cipherEnd + 1);
   // Split into frames and decrypt each under its own chunk index. Only the last
-  // frame of the CONTAINER may be short — a mid-file frame never is.
+  // frame of the CONTAINER may be short; a mid-file frame never is.
   const parts: Uint8Array[] = [];
   let offset = 0;
   for (let i = r.firstChunk; i <= r.lastChunk; i++) {
@@ -133,7 +133,7 @@ for (const size of [1, CHUNK - 1, CHUNK, CHUNK + 1, CHUNK * 2 + 123, CHUNK * 5 +
   const plain = Uint8Array.from({ length: size }, (_, i) => (i * 131 + 7) % 256);
   const cipher = await e2ee.encryptBytes(fileKey, plain, "full");
   // A spread that deliberately includes both boundaries, unaligned interiors,
-  // single bytes, and the tail — the ranges a seeking player actually emits.
+  // single bytes, and the tail: the ranges a seeking player actually emits.
   const ranges: Array<[number, number]> = [
     [0, 0],
     [0, Math.min(1023, size - 1)],

@@ -14,7 +14,7 @@ import {
 /**
  * Account identity keypair helpers (the "account keychain"; #214/#49). The
  * account gets its own X25519 keypair so others can seal secrets *to the account*
- * — directed-invite preapproval seals the Group Key to `publicKey`, and the
+ * directed-invite preapproval seals the Group Key to `publicKey`, and the
  * account profile key is sealed here too. The private key is wrapped under the
  * account password (the same secret that already wraps every membership key), so
  * one password unlocks it on any device. Runs in the browser; the server only
@@ -76,7 +76,7 @@ export async function enrollAccountForSignup(password: string): Promise<AccountS
  * Mint a fresh Account Profile Key (APK) and seal it to the account's public key
  * (#49). The APK is a symmetric key that encrypts account-level onboarding profile
  * fields (contact, children); sealing it to the account public key means the
- * account private key opens it — nothing extra to re-wrap on password change.
+ * account private key opens it, so there is nothing extra to re-wrap on a password change.
  * Returns the sealed blob to persist as `Account.wrappedProfileKey`. Used at
  * sign-up, where `accountKeyMaterial` isn't in the keystore yet.
  */
@@ -88,7 +88,7 @@ export async function sealProfileKeyTo(accountPublicKey: string): Promise<string
 /**
  * Backfill enrollment for an account created before the keychain shipped: mint the
  * identity keypair (wrapped under the password) + a profile key (sealed to it).
- * No recovery wrap — the person sets that up from My Account → Recovery code.
+ * No recovery wrap; the person sets that up from My Account -> Recovery code.
  */
 export interface AccountKeychainBackfill {
   publicKey: string;
@@ -124,7 +124,7 @@ export async function rewrapAccountPrivateKey(
 // A membership's private key is normally wrapped only under the account password,
 // so forgetting it loses the key. But every membership key is ALSO sealed to the
 // account public key (Member.accountSealedPrivateKey). Holding the account private
-// key — recovered from the one-time code — lets us reopen each membership key and
+// key (recovered from the one-time code) lets us reopen each membership key and
 // re-wrap it under a NEW password, keeping Group Key grants and standing intact.
 // This is the no-re-approval restore path; it mirrors the password-change re-wrap,
 // the difference being the secret comes from the recovery code, not the old password.
@@ -143,7 +143,7 @@ export interface RestoredMembership {
 /**
  * Recover the account private key from the one-time recovery code, then re-wrap
  * every supplied membership key under the new password. Returns the account key
- * re-wrapped under the new password plus the per-membership re-wraps — the caller
+ * re-wrapped under the new password plus the per-membership re-wraps. The caller
  * posts these for the server to persist. Throws if the recovery code is wrong.
  */
 export async function restoreKeychainWithRecoveryCode(args: {

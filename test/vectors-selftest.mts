@@ -6,7 +6,7 @@
  * Three promises, checkable forever:
  *
  *  1. **Cross-implementation agreement.** Every sealed vector must open under
- *     BOTH implementations — libsodium (the app) and @stablelib (the worker).
+ *     BOTH implementations: libsodium (the app) and @stablelib (the worker).
  *     Two codebases, one cipher, no drift.
  *  2. **Format freeze.** The deterministic container vectors state exact
  *     lengths and digests. A change here means stored blobs in real
@@ -30,7 +30,7 @@ const b64e = (b: Uint8Array) => sodium.to_base64(b, sodium.base64_variants.ORIGI
 let pass = 0;
 const failures: string[] = [];
 const ok = (n: string, c: boolean, d = "") => {
-  if (!c) { failures.push(n); console.log(`  ✗ ${n}${d ? ` — ${d}` : ""}`); return; }
+  if (!c) { failures.push(n); console.log(`  ✗ ${n}${d ? `: ${d}` : ""}`); return; }
   pass++; console.log(`  ✓ ${n}`);
 };
 
@@ -59,7 +59,7 @@ for (const c of V.mediaContainer.vectors) {
   const nonces = Array.from({ length: c.frames }, (_, f) => pattern(24, 100 + f));
   const sealed = await e2ee.encryptBytesWithNonces(c.fileKey, plain, c.context, nonces);
   ok(`${c.name}: ciphertext length is frozen`, sealed.length === c.cipherLength,
-    `got ${sealed.length}, contract says ${c.cipherLength} — a mismatch ORPHANS EVERY STORED BLOB`);
+    `got ${sealed.length}, contract says ${c.cipherLength}. A mismatch ORPHANS EVERY STORED BLOB`);
   ok(`${c.name}: digest is frozen`, b64e(sodium.crypto_generichash(32, sealed, null)) === c.cipherBlake2b256,
     "same warning: this is the wire format, not a fixture");
   if (c.ciphertext) {
