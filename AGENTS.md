@@ -65,6 +65,27 @@ npm test              # crypto, rewrap, media-range, interop
 npm run test:vectors
 ```
 
+## The published artifact
+
+`npm run build` (tsup) emits `dist/`, and the `exports` map points there, not at
+`src/`. This matters: the first cut of this package exported raw `.ts` and would
+have broken every consumer that does not transpile `node_modules`, which
+includes a default Next.js app.
+
+`src/` is still shipped in the tarball on purpose. `dist/` is what runs; `src/`
+is what someone reads when deciding whether to trust what they installed. The
+build is unminified for the same reason.
+
+Do not add `splitting: true` or merge the entries. Each subpath is its own entry
+so that `aad`, `media-format` and `media-range` stay free of any crypto import,
+which is what lets a service worker take the frame geometry without pulling in
+libsodium. Verify after any build change:
+
+```bash
+grep -c libsodium dist/media-format.js   # must be 0
+grep -c libsodium dist/sw-decrypt.js     # must be 0 (it uses @stablelib)
+```
+
 All four suites and the vectors must pass. CI runs exactly these, so a green
 local run means a green build.
 

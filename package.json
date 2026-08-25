@@ -5,13 +5,34 @@
   "description": "The end-to-end encryption core of Group Space: field AEAD with context binding, the account keychain protocol, and the encrypted media container - extracted so the code that guards content can be read, tested, and rebuilt by anyone.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./e2ee": "./src/e2ee.ts",
-    "./account-keys": "./src/account-keys.ts",
-    "./aad": "./src/aad.ts",
-    "./media-format": "./src/media-format.ts",
-    "./media-range": "./src/media-range.ts",
-    "./sw-decrypt": "./sw/decrypt.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./e2ee": {
+      "types": "./dist/e2ee.d.ts",
+      "import": "./dist/e2ee.js"
+    },
+    "./account-keys": {
+      "types": "./dist/account-keys.d.ts",
+      "import": "./dist/account-keys.js"
+    },
+    "./aad": {
+      "types": "./dist/aad.d.ts",
+      "import": "./dist/aad.js"
+    },
+    "./media-format": {
+      "types": "./dist/media-format.d.ts",
+      "import": "./dist/media-format.js"
+    },
+    "./media-range": {
+      "types": "./dist/media-range.d.ts",
+      "import": "./dist/media-range.js"
+    },
+    "./sw-decrypt": {
+      "types": "./dist/sw-decrypt.d.ts",
+      "import": "./dist/sw-decrypt.js"
+    }
   },
   "dependencies": {
     "@stablelib/xchacha20poly1305": "^2.0.1",
@@ -20,12 +41,14 @@
   "devDependencies": {
     "@types/libsodium-wrappers-sumo": "^0.7.8",
     "@types/node": "^26.3.0",
+    "tsup": "^8.5.1",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3"
   },
   "license": "Apache-2.0",
   "sideEffects": false,
   "files": [
+    "dist",
     "src",
     "sw",
     "docs",
@@ -42,6 +65,14 @@
     "test:media-range": "tsx test/media-range-selftest.mts",
     "test:interop": "tsx test/sw-crypto-interop.mts",
     "test:vectors": "tsx test/vectors-selftest.mts",
-    "vectors:generate": "tsx test/generate-vectors.mts"
+    "vectors:generate": "tsx test/generate-vectors.mts",
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
