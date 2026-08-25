@@ -31,7 +31,8 @@
     "docs",
     "LICENSE",
     "README.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "AGENTS.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -4,7 +4,7 @@
  * Run with:  npm run test:crypto
  *
  * Exercises every primitive plus the negative cases that actually matter for a
- * crypto module — wrong password/key, context (AAD) swaps, tampering, and chunk
+ * crypto module: wrong password/key, context (AAD) swaps, tampering, and chunk
  * reordering must all be *rejected*, not silently accepted. Exits non-zero on any
  * failure so it can gate CI later.
  */
@@ -128,7 +128,7 @@ console.log("streaming media encryption (encryptBlobFrames / encryptBlobToBlob):
  * the same container the one-shot path does, or the reader, the range fetcher,
  * and the export all break on anything uploaded after it ships. Nonces are
  * random, so "identical" means same frame count, same total length, and
- * decryptable by the existing decryptBytes — not equal bytes.
+ * decryptable by the existing decryptBytes, not equal bytes.
  */
 async function streamMatchesOneShot(size: number, label: string) {
   const bytes = Uint8Array.from({ length: size }, (_, i) => (i * 31) % 256);
@@ -154,7 +154,7 @@ await streamMatchesOneShot(Math.floor(e2ee.MEDIA_CHUNK_SIZE * 2.5), "partial tra
 await streamMatchesOneShot(e2ee.MEDIA_CHUNK_SIZE * 70, "beyond the fold threshold");
 
 // One-shot output must also be readable by whatever reads streamed output, and
-// vice versa — the two directions are what "no migration" actually means.
+// vice versa. The two directions are what "no migration" actually means.
 const streamedFull = await e2ee.encryptBlobToBlob(fileKey, new Blob([big]), "full");
 const streamedFullBytes = new Uint8Array(await streamedFull.arrayBuffer());
 await throws(
@@ -188,7 +188,7 @@ ok(
   "full frames are uniform and the trailing frame is shorter",
 );
 
-// Progress must report plaintext bytes and finish exactly at the file size —
+// Progress must report plaintext bytes and finish exactly at the file size,
 // a bar that stops at 97% or overshoots is worse than no bar.
 let lastProgress = 0;
 await e2ee.encryptBlobToBlob(

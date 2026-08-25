@@ -3,7 +3,7 @@
  *
  * Split out of `e2ee.ts` so they can be imported without pulling libsodium in
  * with them. The service worker needs the frame geometry to seek inside a video
- * (#390) and is bundled by esbuild — importing `e2ee.ts` there would drag the
+ * (#390) and is bundled by esbuild. Importing `e2ee.ts` there would drag the
  * whole WASM crypto core into the service-worker bundle for four integers. The
  * SW does its own AEAD with @stablelib, which is already in that bundle for
  * push decryption.

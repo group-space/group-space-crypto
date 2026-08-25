@@ -1,7 +1,7 @@
 name: CI
 
 # Every push and PR: typecheck, the four suites, and the vectors. The vectors
-# job is the wire-format freeze made enforceable — a vector that stops passing
+# job is the wire-format freeze made enforceable. A vector that stops passing
 # means stored blobs in real deployments just got orphaned, and that is a
 # red build, not a fixture refresh.
 on:

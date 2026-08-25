@@ -14,7 +14,7 @@ export { MEDIA_CHUNK_SIZE };
 /**
  * End-to-end encryption core (see docs/e2ee-design.md).
  *
- * These are pure, framework-agnostic primitives — no app/DB wiring — so they can
+ * These are pure, framework-agnostic primitives with no app/DB wiring, so they can
  * be audited and tested in isolation before anything depends on them. All values
  * that cross a storage/transport boundary are **base64 strings** (libsodium
  * ORIGINAL variant); raw `Uint8Array` is used only internally.
@@ -240,7 +240,7 @@ export async function unwrapFileKey(wrapped: SealedField, groupKey: string): Pro
 /**
  * Encrypt one media chunk. The chunk index is bound as AAD so chunks can't be
  * reordered, and a random nonce is stored per chunk. Returns `nonce || ct` as
- * base64; the client fetches a byte range, splits the nonce, and decrypts —
+ * base64; the client fetches a byte range, splits the nonce, and decrypts,
  * enabling seek/streaming without the server ever seeing plaintext.
  */
 export async function encryptChunk(
@@ -285,21 +285,21 @@ export async function decryptChunk(
 }
 
 /**
- * Whole-file byte encryption for media at rest — a self-framing binary container
+ * Whole-file byte encryption for media at rest: a self-framing binary container
  * built on the same per-chunk AEAD as {@link encryptChunk}, but returning raw
  * bytes (no base64 bloat) suitable for writing straight to disk / a Blob.
  *
  * Layout: the concatenation of per-chunk frames, each `nonce || ciphertext`.
  * Every chunk but the last carries exactly {@link MEDIA_CHUNK_SIZE} plaintext,
  * so a decoder splits by the fixed full-frame size and treats the shorter
- * trailing frame as the final chunk — no length header needed. The AAD binds
+ * trailing frame as the final chunk, so no length header is needed. The AAD binds
  * both a `context` label (so the same file key can protect, e.g., a photo's
  * "full" and "thumb" without either being swappable for the other) and the
  * chunk index (so chunks can't be reordered). Empty input yields a single empty
  * chunk so the container always has at least one frame.
  *
  * Note (threat model): truncation of trailing chunks by a *malicious* host is
- * out of scope (docs/e2ee-design.md) — a curious host sees only ciphertext, and
+ * out of scope (docs/e2ee-design.md): a curious host sees only ciphertext, and
  * every byte it does serve is authenticated.
  */
 
@@ -319,14 +319,14 @@ export async function encryptBytes(
  * authenticator. `encryptBytes` is the only correct entry point.
  *
  * It exists because a nonce is the *only* random input to a seal, so fixing it
- * makes the output fully determined — which is what allows a test vector to
+ * makes the output fully determined, which is what allows a test vector to
  * state expected bytes at all, and therefore what lets the Swift sealer in the
  * iOS Share Extension be checked byte-for-byte against this one
  * (`scripts/media-format-selftest.mts`, `tools/swift-parity`).
  *
  * Exported rather than reimplemented in the test on purpose. A mirror of this
  * loop living in the test file is a second encoder, and a second encoder is
- * precisely what those vectors exist to detect — it would have pinned the mirror
+ * precisely what those vectors exist to detect. It would have pinned the mirror
  * while the shipping encoder drifted freely underneath it. One encoder, one set
  * of bytes.
  */
@@ -372,7 +372,7 @@ export async function encryptBytesWithNonces(
 
 /**
  * Streaming counterpart to {@link encryptBytes}: the same container, the same
- * AAD, the same frame layout — but it never holds more than one chunk of
+ * AAD, the same frame layout, but it never holds more than one chunk of
  * plaintext and one frame of ciphertext at a time.
  *
  * `encryptBytes` takes the whole input as a `Uint8Array` and returns the whole
@@ -380,15 +380,15 @@ export async function encryptBytesWithNonces(
  * the upload has even started. That was fine while media was small. It stopped
  * being fine when video was exempted from the `MAX_UPLOAD_MB` cap
  * (`storage.ts` `skipSizeLimit`, #192) and paid tiers set `maxVideoSeconds:
- * null` — a 2 GB clip off a modern phone is now an ordinary thing to pick.
+ * null`; a 2 GB clip off a modern phone is now an ordinary thing to pick.
  *
  * Consumers choose the sink. {@link encryptBlobToBlob} collects into a Blob for
  * the current upload path; the native background uploader (#384) writes frames
  * straight to disk. Both read from this one generator so the container can only
  * ever be produced in one place.
  *
- * Output is the same container {@link encryptBytes} produces — same frame
- * count, same frame sizes, same AAD, differing only in the random nonces — so
+ * Output is the same container {@link encryptBytes} produces: same frame
+ * count, same frame sizes, same AAD, differing only in the random nonces, so
  * {@link decryptBytes}, the media reader, and the export path all consume it
  * unchanged. There is no format change and nothing to migrate.
  */
@@ -403,7 +403,7 @@ export async function* encryptBlobFrames(
   // input still yields exactly one frame and the container is never empty.
   const chunkCount = Math.max(1, Math.ceil(blob.size / MEDIA_CHUNK_SIZE));
   for (let i = 0; i < chunkCount; i++) {
-    // Blob.slice() is a view, not a copy — the read happens at arrayBuffer(),
+    // Blob.slice() is a view, not a copy; the read happens at arrayBuffer(),
     // one chunk at a time, which is the whole point of this function.
     const slice = blob.slice(i * MEDIA_CHUNK_SIZE, (i + 1) * MEDIA_CHUNK_SIZE);
     const plain = new Uint8Array(await slice.arrayBuffer());
@@ -424,7 +424,7 @@ export async function* encryptBlobFrames(
 
 /**
  * How many frames to hand to the accumulating Blob at a time. 64 x 256 KB ≈
- * 16 MB — small enough that the JS-side array is never the problem, large
+ * 16 MB: small enough that the JS-side array is never the problem, large
  * enough that we are not rebuilding a Blob per chunk.
  *
  * What the fold does and does not buy, measured rather than assumed:
@@ -436,7 +436,7 @@ export async function* encryptBlobFrames(
  *    still holds one copy of the ciphertext. Measured under Node (256 MB input,
  *    ~303 MB of growth) that copy is resident, because Node's Blob has no
  *    disk-backed store. Browsers spill large blobs to disk, so the same code is
- *    expected to cost less resident memory there — expected, not verified here.
+ *    expected to cost less resident memory there. Expected, not verified here.
  *
  * So the honest claim for this function is that it halves peak memory versus
  * {@link encryptBytes}, which materialises the whole input *and* the whole
@@ -448,7 +448,7 @@ const FRAME_FOLD_COUNT = 64;
 
 /**
  * {@link encryptBlobFrames} collected into a Blob. Peak memory is roughly one
- * copy of the ciphertext rather than {@link encryptBytes}'s two — see
+ * copy of the ciphertext rather than {@link encryptBytes}'s two. See
  * {@link FRAME_FOLD_COUNT} for what that does and does not guarantee.
  *
  * `onProgress` reports plaintext bytes consumed, for a progress bar that tracks

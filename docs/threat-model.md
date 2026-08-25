@@ -7,7 +7,7 @@ wrong side of it.
 
 ## Defended: the curious or compromised host
 
-The adversary this design takes seriously is the party operating the server —
+The adversary this design takes seriously is the party operating the server,
 or holding what the server holds:
 
 - a nosy or coerced operator reading the database,
@@ -18,7 +18,7 @@ Against that adversary, group **content** is ciphertext: discussion titles and
 bodies, every event detail including its times, contact phone and address,
 children's names and grades, photos and video (full media *and* thumbnails,
 which also strips EXIF/GPS from previews), album names and descriptions,
-payment-collection details, RSVP answers, and — in push payloads — the message
+payment-collection details, RSVP answers, and (in push payloads) the message
 content and the sender's display name. Keys exist server-side only as wrapped
 or sealed blobs the server cannot open.
 
@@ -29,7 +29,7 @@ The party that serves the JavaScript could serve different JavaScript. Open
 code, published artifacts, and the verification tiers in `docs/verify.md`
 narrow this (a modification would have to be targeted and risks detection);
 they do not close it. Anyone whose adversary can compel the operator should
-treat that adversary as out of scope for this tool — and for any tool with
+treat that adversary as out of scope for this tool, and for any tool with
 this delivery model.
 
 **A compromised member device.** A device that can decrypt is a device that
@@ -44,7 +44,7 @@ The server necessarily sees, and this protocol does not hide:
 
 - who belongs to which group (the grant table is who-can-open-what),
 - when members are active, and from where (ordinary web traffic),
-- object sizes and timing — the *shape* of activity, not its content,
+- object sizes and timing: the *shape* of activity, not its content,
 - email addresses (they are the login credential and recovery channel),
 - in the shipping parent-market product: display names and group names
   (rendered before a viewer holds any key). Narrowing this specific line is
@@ -63,7 +63,7 @@ The server necessarily sees, and this protocol does not hide:
   password strong.
 
 If your safety depends on getting this exactly right against a resourced,
-targeted adversary, use tools built and audited for that work — and the
+targeted adversary, use tools built and audited for that work, and the
 operational guidance that goes with them. For everyone who simply refuses to
 be the product, this is what honest engineering under this delivery model
 looks like.

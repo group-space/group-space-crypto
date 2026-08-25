@@ -4,8 +4,8 @@
  * Run with:  npm run test:rewrap
  *
  * The change-password flow re-wraps each membership's private key from the old
- * password to the new one. The property that makes it safe — and distinguishes
- * it from a forgotten-password reset — is that the *keypair never changes*, so
+ * password to the new one. The property that makes it safe, and distinguishes
+ * it from a forgotten-password reset, is that the *keypair never changes*, so
  * existing Group Key grants keep opening. These assertions pin that invariant:
  *
  *   1. re-wrapped key opens under the NEW password

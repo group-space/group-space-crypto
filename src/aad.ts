@@ -1,7 +1,7 @@
 /**
  * Shared AAD (context-binding) labels for encrypted fields. These are part of
- * the ciphertext contract — the value used to encrypt must exactly match the one
- * used to decrypt — so they live in one place. In particular, rich push includes
+ * the ciphertext contract (the value used to encrypt must exactly match the one
+ * used to decrypt), so they live in one place. In particular, rich push includes
  * the AAD in its payload and the service worker decrypts with it, so a drift
  * between the client's encrypt call and the server's push payload would silently
  * fall back to a generic notification.
@@ -33,12 +33,12 @@ export const EVENT_CAPACITY_AAD = "event.capacity";
 // the composer of the post, because the server holds no group key and the
 // member's name must not ride beside the ciphertext in the clear: a lock screen
 // reading "Alice Chen started a discussion" reveals who is talking to whom,
-// which is the social graph — the thing the payload was already careful not to
+// which is the social graph, the thing the payload was already careful not to
 // leak about the content. Its own AAD, so a sealed name can never be replayed
 // where a body or title is expected, nor the reverse.
 export const PUSH_SENDER_AAD = "push.sender";
 
-// Chip In — group payment helper (issue #111). Every detail (title, amount, and
+// Chip In, the group payment helper (issue #111). Every detail (title, amount, and
 // the collector's payment label/link) is sealed under the Group Key; the server
 // can't read it, so the create notification is generic and details render
 // in-app. These labels bind each ciphertext to its field.
