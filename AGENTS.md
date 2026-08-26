@@ -8,8 +8,8 @@ habits are wrong here.
 
 **1. Format v1 is frozen.** Every constant in `src/media-format.ts`, the frame
 layout, the `WrappedSecret` and `SealedField` shapes, the base64 variant, the
-recovery alphabet, and every AAD label already in `src/aad.ts` are load-bearing
-for ciphertext at rest in real deployments. Changing one does not orphan a
+recovery alphabet, and every AAD label already in `src/aad.ts` are what
+ciphertext at rest in real deployments was written with. Changing one does not orphan a
 test; it orphans production data. AAD labels may be **added**, never renamed or
 removed. See `docs/protocol.md` §8.
 
@@ -36,7 +36,10 @@ system, because it was.
 - **No AI tells.** No "it's not X, it's Y" pivots, no rhetorical question
   followed by a fragment, no "here's the thing", no tricolon habit, no
   puffery verbs ("serves as", "stands as", "is a testament to"). Say what is
-  true and let it be flat. The check:
+  true and let it be flat.
+- **Not "load-bearing".** A borrowed metaphor that says only "this matters",
+  which every sentence in a spec already claims. Name the consequence instead:
+  what breaks, and for whom. The check:
 
   ```bash
   # EM is written as an escape so this file does not itself trip the check
@@ -44,6 +47,7 @@ system, because it was.
   grep -rn "$EM" --include="*.ts" --include="*.mts" --include="*.md" .
   grep -rnE "[a-z,] - [a-z]" README.md SECURITY.md docs/*.md
   grep -rnEi "not just .{1,40}\bbut\b|isn't just|here's the (thing|kicker)|serves as|testament to" .
+  grep -rni "load.bearing" .
   ```
 
 - **Comments explain why, not what.** The existing comments are long on
