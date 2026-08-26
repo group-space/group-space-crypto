@@ -1,12 +1,26 @@
 name: Publish
 
-# Tag vX.Y.Z → npm publish with provenance. The OIDC attestation links the
-# artifact on npm to this exact workflow run and commit, which is tier 1 of
-# docs/verify.md. The release notes must carry the artifact SHA-256; the job
-# prints it so the person cutting the release can paste it.
+# Tag vX.Y.Z -> npm publish, authenticated by OIDC rather than a token.
 #
-# Requires (one-time, repo settings): the NPM_TOKEN secret with publish rights
-# to @group-space, and the package's provenance requirement enabled on npm.
+# ## Why there is no NPM_TOKEN here
+#
+# npm Trusted Publishing swaps the long-lived automation token for a
+# short-lived credential minted per run from this workflow's OIDC identity.
+# There is no secret to leak, rotate, or forget to expire, and npm attaches the
+# provenance attestation automatically - which is tier 1 of docs/verify.md, and
+# the reason a stranger can tie the artifact on npm to a commit they can read.
+#
+# npm's own signup flow now warns against the token path for exactly this
+# reason, so the token version of this workflow was replaced before it ever ran.
+#
+# ## One-time setup on npmjs.com
+#
+# Package settings -> Trusted Publishing: GitHub Actions, repository
+# group-space/group-space-crypto, workflow file publish.yml. That binding is
+# what the OIDC token is checked against, so renaming this file breaks
+# publishing until the binding is updated.
+#
+# The release notes must carry the artifact SHA-256; the last step prints it.
 on:
   push:
     tags: ["v*"]
@@ -25,13 +39,18 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
+      # Node 22 ships npm 10.x; Trusted Publishing needs 11.5.1 or newer, and
+      # without this the publish fails with an auth error that reads like a
+      # permissions problem rather than a version one.
+      - run: npm install -g npm@latest
+      - run: npm --version
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:vectors
       - run: npm run build
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No --provenance flag and no token: OIDC supplies both. `access` comes
+      # from publishConfig in package.json.
+      - run: npm publish
       - name: Artifact digest for the release notes
         run: npm pack --silent | xargs sha256sum
