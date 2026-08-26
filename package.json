@@ -1,37 +1,44 @@
 {
   "name": "@group-space/crypto-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "The end-to-end encryption core of Group Space: field AEAD with context binding, the account keychain protocol, and the encrypted media container - extracted so the code that guards content can be read, tested, and rebuilt by anyone.",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./e2ee": {
       "types": "./dist/e2ee.d.ts",
-      "import": "./dist/e2ee.js"
+      "import": "./dist/e2ee.js",
+      "default": "./dist/e2ee.js"
     },
     "./account-keys": {
       "types": "./dist/account-keys.d.ts",
-      "import": "./dist/account-keys.js"
+      "import": "./dist/account-keys.js",
+      "default": "./dist/account-keys.js"
     },
     "./aad": {
       "types": "./dist/aad.d.ts",
-      "import": "./dist/aad.js"
+      "import": "./dist/aad.js",
+      "default": "./dist/aad.js"
     },
     "./media-format": {
       "types": "./dist/media-format.d.ts",
-      "import": "./dist/media-format.js"
+      "import": "./dist/media-format.js",
+      "default": "./dist/media-format.js"
     },
     "./media-range": {
       "types": "./dist/media-range.d.ts",
-      "import": "./dist/media-range.js"
+      "import": "./dist/media-range.js",
+      "default": "./dist/media-range.js"
     },
     "./sw-decrypt": {
       "types": "./dist/sw-decrypt.d.ts",
-      "import": "./dist/sw-decrypt.js"
+      "import": "./dist/sw-decrypt.js",
+      "default": "./dist/sw-decrypt.js"
     }
   },
   "dependencies": {
