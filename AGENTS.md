@@ -76,6 +76,10 @@ includes a default Next.js app.
 is what someone reads when deciding whether to trust what they installed. The
 build is unminified for the same reason.
 
+`repository` in package.json is **required**, not decoration: npm verifies that
+it matches the source named in the provenance attestation and rejects the
+publish with a 422 if it does not. Removing it breaks releases.
+
 Do not add `splitting: true` or merge the entries. Each subpath is its own entry
 so that `aad`, `media-format` and `media-range` stay free of any crypto import,
 which is what lets a service worker take the frame geometry without pulling in
