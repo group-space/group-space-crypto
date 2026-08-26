@@ -84,6 +84,13 @@ build is unminified for the same reason.
 it matches the source named in the provenance attestation and rejects the
 publish with a 422 if it does not. Removing it breaks releases.
 
+Every subpath in `exports` needs a **`default`** condition alongside `import`.
+Without it, only a pure-ESM resolver can see the subpath: anything reaching the
+package through the CJS path, which includes `tsx` and therefore several test
+runners, fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` naming a subpath that is
+visibly right there in package.json. Found on the first real consumption, in
+0.1.0, fixed in 0.1.1.
+
 Do not add `splitting: true` or merge the entries. Each subpath is its own entry
 so that `aad`, `media-format` and `media-range` stay free of any crypto import,
 which is what lets a service worker take the frame geometry without pulling in
