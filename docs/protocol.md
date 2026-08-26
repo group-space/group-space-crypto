@@ -6,9 +6,9 @@ against the committed test vectors (`test/vectors/v1.json`) without running our
 code. Where this document and the code disagree, the code and its vectors are
 the protocol and this document has a bug. Please report it.
 
-**Format v1 is frozen.** Every constant, layout, and serialized shape below is
-load-bearing for ciphertext already at rest in real deployments. A change to
-any of them is not a version bump; it is a data migration. See §8.
+**Format v1 is frozen.** Every constant, layout, and serialized shape below
+describes ciphertext already at rest in real deployments. A change to any of
+them is not a version bump; it is a data migration. See §8.
 
 ## 1. Primitives
 
@@ -90,7 +90,7 @@ A text field sealed under the Group Key:
 
 `ciphertext = XChaCha20-Poly1305(utf8(plaintext), ad = utf8(aad), nonce, key)`.
 
-The **AAD is a context label**, and it is the load-bearing idea of the field
+The **AAD is a context label**, and it is the whole idea of the field
 layer: a ciphertext is bound to *what it is*, so a sealed discussion body can
 never be replayed as an event title, a member's sealed phone number can never
 be presented as an address, and a sealed push attribution can never stand in
