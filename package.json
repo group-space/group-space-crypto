@@ -1,6 +1,6 @@
 {
   "name": "@group-space/crypto-core",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": false,
   "description": "The end-to-end encryption core of Group Space: field AEAD with context binding, the account keychain protocol, and the encrypted media container - extracted so the code that guards content can be read, tested, and rebuilt by anyone.",
   "type": "module",
