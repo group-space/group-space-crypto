@@ -5,7 +5,7 @@
   "fieldAead": [
     {
       "aad": "discussion.post.body",
-      "plaintext": "Can someone cover carpool Friday? 🚗",
+      "plaintext": "Can someone cover carpool Friday? \ud83d\ude97",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
         "nonce": "uj2H/Bkt3KtAiHsIXBCj0u5YKcIGaLys",
@@ -96,6 +96,18 @@
         "cipherBlake2b256": "i6h732Y82Z7Q+fnN/taSt9HTbZVu0I4UmLT/gjJoPWU="
       }
     ]
+  },
+  "mediaManifest": {
+    "fileKey": "HSQrMjlAR05VXGNqcXh/ho2Um6KpsLe+xczT2uHo7/Y=",
+    "context": "full",
+    "manifest": {
+      "bytes": 655370,
+      "frames": 3
+    },
+    "sealed": {
+      "nonce": "I8DQhnh+eOLh3rfiJ945oNUUOB3tfP5z",
+      "ciphertext": "fsUUwigK7BTx1HWFMmmHPzJBMbYRPt0kpsu79b8rU50RmbxYBUS4IH9hyQ=="
+    }
   },
   "wrappedSecret": {
     "password": "correct horse battery staple",

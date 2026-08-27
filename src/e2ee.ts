@@ -5,6 +5,7 @@ import {
   TAG_BYTES,
   FULL_FRAME_BYTES,
 } from "./media-format";
+import { MEDIA_MANIFEST_AAD } from "./aad";
 
 // Re-exported so the many existing `from "./e2ee"` imports keep working; the
 // definitions live in media-format.ts, which the service worker can import
@@ -12,7 +13,8 @@ import {
 export { MEDIA_CHUNK_SIZE };
 
 /**
- * End-to-end encryption core (see docs/e2ee-design.md).
+ * End-to-end encryption core. The wire formats are specified in
+ * docs/protocol.md and pinned by test/vectors/v1.json.
  *
  * These are pure, framework-agnostic primitives with no app/DB wiring, so they can
  * be audited and tested in isolation before anything depends on them. All values
@@ -298,9 +300,11 @@ export async function decryptChunk(
  * chunk index (so chunks can't be reordered). Empty input yields a single empty
  * chunk so the container always has at least one frame.
  *
- * Note (threat model): truncation of trailing chunks by a *malicious* host is
- * out of scope (docs/e2ee-design.md): a curious host sees only ciphertext, and
- * every byte it does serve is authenticated.
+ * Every byte this container serves is authenticated, which is not the same
+ * claim as the file being complete. Whole frames removed from the end used to
+ * open without error, because nothing bound the number of frames. Pass the
+ * sealed manifest from {@link sealMediaManifest} as `expect` to close that,
+ * and see docs/threat-model.md for what remains outside this library's reach.
  */
 
 export async function encryptBytes(
@@ -479,10 +483,72 @@ export async function encryptBlobToBlob(
 }
 
 /** Reverse of {@link encryptBytes}. Throws if the key, context, or bytes are wrong. */
+/**
+ * What a complete container holds: how much plaintext, in how many frames.
+ *
+ * The frame count is not derivable from trustworthy data at open time. A reader
+ * only has the bytes it was handed, and a container trimmed at a frame boundary
+ * is a shorter but internally valid container. Sealing these two numbers under
+ * the file key gives the reader a figure to compare against that the party
+ * storing the bytes cannot rewrite.
+ */
+export interface MediaManifest {
+  /** Total plaintext bytes across every frame. */
+  bytes: number;
+  /** Number of frames the container was written with. */
+  frames: number;
+}
+
+/**
+ * The manifest describing what {@link encryptBytes} will produce for `bytes`.
+ *
+ * Empty input still yields one frame, matching the container's own rule that
+ * every container has at least one frame.
+ */
+export function mediaManifestFor(bytes: Uint8Array): MediaManifest {
+  return {
+    bytes: bytes.length,
+    frames: Math.max(1, Math.ceil(bytes.length / MEDIA_CHUNK_SIZE)),
+  };
+}
+
+/**
+ * Seal a manifest under the same per-file key as the container it describes.
+ *
+ * Stored beside the container, in the same place its wrapped file key already
+ * lives. The AAD carries the container's context, so the manifest for a photo's
+ * "full" cannot be presented as the manifest for its "thumb".
+ */
+export async function sealMediaManifest(
+  fileKey: string,
+  manifest: MediaManifest,
+  context: string,
+): Promise<SealedField> {
+  return encryptField(fileKey, JSON.stringify(manifest), `${MEDIA_MANIFEST_AAD}:${context}`);
+}
+
+/** Reverse of {@link sealMediaManifest}. Throws if the manifest was tampered with. */
+export async function openMediaManifest(
+  fileKey: string,
+  sealed: SealedField,
+  context: string,
+): Promise<MediaManifest> {
+  const json = await decryptField(fileKey, sealed, `${MEDIA_MANIFEST_AAD}:${context}`);
+  const parsed = JSON.parse(json) as MediaManifest;
+  if (!Number.isSafeInteger(parsed.bytes) || parsed.bytes < 0) {
+    throw new Error("media manifest: bytes is not a valid length");
+  }
+  if (!Number.isSafeInteger(parsed.frames) || parsed.frames < 1) {
+    throw new Error("media manifest: frames is not a valid count");
+  }
+  return parsed;
+}
+
 export async function decryptBytes(
   fileKey: string,
   data: Uint8Array,
   context: string,
+  expect?: MediaManifest,
 ): Promise<Uint8Array> {
   const s = await getSodium();
   const key = await b64decode(fileKey);
@@ -507,6 +573,19 @@ export async function decryptBytes(
     offset += frameLen;
     index += 1;
   } while (offset < data.length);
+  // Frames opened, so every byte here is authentic. Whether they are ALL of the
+  // bytes is a different question, and one the frames cannot answer: a
+  // container cut at a frame boundary is a valid shorter container. Only the
+  // sealed manifest carries the original figures, so a caller that has one gets
+  // the check and a caller that does not is left exactly where it was.
+  if (expect) {
+    if (index !== expect.frames || total !== expect.bytes) {
+      throw new Error(
+        `media container is incomplete: opened ${index} frames and ${total} bytes, ` +
+          `manifest declares ${expect.frames} frames and ${expect.bytes} bytes`,
+      );
+    }
+  }
   const out = new Uint8Array(total);
   let o = 0;
   for (const p of parts) {

@@ -9,6 +9,7 @@
  * failure so it can gate CI later.
  */
 import * as e2ee from "../src/e2ee.ts";
+import { FULL_FRAME_BYTES } from "../src/media-format.ts";
 
 let pass = 0;
 let fail = 0;
@@ -120,6 +121,64 @@ tampered[tampered.length - 1] ^= 0x01;
 await throws(
   () => e2ee.decryptBytes(fileKey, tampered, "full"),
   "tampered media bytes are rejected",
+);
+
+console.log("container completeness (sealed length manifest):");
+// `big` is 2.5 chunks, so three frames, the shortest container where dropping a
+// whole frame still leaves a valid one behind. That is the case the frames
+// cannot catch on their own.
+const bigManifest = e2ee.mediaManifestFor(big);
+ok(bigManifest.frames === 3, "a 2.5-chunk file is three frames");
+ok(bigManifest.bytes === big.length, "the manifest records the plaintext length");
+ok(
+  e2ee.mediaManifestFor(new Uint8Array(0)).frames === 1,
+  "an empty file is still one frame",
+);
+
+const sealedManifest = await e2ee.sealMediaManifest(fileKey, bigManifest, "full");
+const opened = await e2ee.openMediaManifest(fileKey, sealedManifest, "full");
+ok(
+  opened.frames === bigManifest.frames && opened.bytes === bigManifest.bytes,
+  "the manifest roundtrips under the file key",
+);
+await throws(
+  () => e2ee.openMediaManifest(fileKey, sealedManifest, "thumb"),
+  "a manifest sealed for one context does not open for another",
+);
+const bentManifest = {
+  ...sealedManifest,
+  ciphertext: sealedManifest.ciphertext.slice(0, -4) + "AAAA",
+};
+await throws(
+  () => e2ee.openMediaManifest(fileKey, bentManifest, "full"),
+  "a tampered manifest is rejected",
+);
+
+// The finding itself. Cut the container at a frame boundary and it stays
+// internally valid: every remaining frame opens, and the shortfall is invisible.
+const truncated = fullEnc.subarray(0, 2 * FULL_FRAME_BYTES);
+const short = await e2ee.decryptBytes(fileKey, truncated, "full");
+ok(
+  short.length < big.length,
+  "without a manifest a truncated container still opens, and returns less",
+);
+await throws(
+  () => e2ee.decryptBytes(fileKey, truncated, "full", bigManifest),
+  "with the manifest, a container truncated at a frame boundary is rejected",
+);
+const whole = await e2ee.decryptBytes(fileKey, fullEnc, "full", bigManifest);
+ok(
+  Buffer.from(whole).equals(Buffer.from(big)),
+  "a complete container passes the manifest check",
+);
+// A manifest describing a different file must not wave this one through.
+await throws(
+  () => e2ee.decryptBytes(fileKey, fullEnc, "full", { bytes: big.length, frames: 4 }),
+  "a manifest claiming more frames than the container holds is rejected",
+);
+await throws(
+  () => e2ee.decryptBytes(fileKey, fullEnc, "full", { bytes: big.length - 1, frames: 3 }),
+  "a manifest claiming a different length is rejected",
 );
 
 console.log("streaming media encryption (encryptBlobFrames / encryptBlobToBlob):");

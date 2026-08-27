@@ -135,6 +135,35 @@ Range arithmetic over this geometry (`src/media-range.ts`) is pure integer
 math shared by the app, the service worker, and the tests: byte range of the
 plaintext → frame span of the ciphertext, and back.
 
+### 6.1 The length manifest
+
+The frame AAD binds each frame to its place, and the tag catches any edit
+inside a frame. Neither binds **how many frames there are**, so a container
+with whole frames removed from the end is a shorter container that opens
+without error. A reader holding only the bytes it was handed cannot tell the
+difference, because both are internally valid.
+
+The manifest is the missing figure, sealed so the party storing the bytes
+cannot rewrite it:
+
+```jsonc
+// SealedField (§5) over JSON, under the per-file key,
+// with AAD  utf8("media.manifest" ":" context)
+{ "bytes": 655370, "frames": 3 }
+```
+
+`bytes` is the total plaintext length; `frames` is the number of frames
+written. An empty file is one frame, matching §6. The AAD carries the
+container's context, so a `full` manifest cannot be presented as a `thumb`.
+
+It is stored beside the container's wrapped file key and supplied by the
+caller at open time. Supplying it is **optional and additive**: a reader that
+passes it gets the completeness check, a reader that does not is exactly where
+it was before, and no stored container changes. Range reads are the reason the
+count lives in a manifest rather than in a marker on the final frame: a reader
+fetching bytes from the middle of a video legitimately never sees the last
+frame, and cannot be asked to require one.
+
 ## 7. Recovery codes
 
 A recovery code is 40 characters from the 32-character alphabet
@@ -155,7 +184,8 @@ The following can never change within format v1:
 - the base64 variant (§2),
 - the `WrappedSecret` and `SealedField` shapes (§4, §5),
 - every AAD label already in the registry (`src/aad.ts`); labels may be
-  **added**, never renamed or removed,
+  **added**, never renamed or removed (`media.manifest`, §6.1, was added this
+  way and is now frozen on the same terms),
 - every constant in §6, and the frame layout,
 - the recovery alphabet and normalization (§7).
 
