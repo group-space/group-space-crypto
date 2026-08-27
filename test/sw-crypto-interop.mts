@@ -9,6 +9,7 @@
  */
 import { XChaCha20Poly1305 } from "@stablelib/xchacha20poly1305";
 import * as e2ee from "../src/e2ee.ts";
+import { openMediaManifest as swOpenMediaManifest } from "../sw/decrypt.ts";
 
 let pass = 0;
 let fail = 0;
@@ -60,6 +61,29 @@ const field2 = {
   ciphertext: sodium.to_base64(sealed, sodium.base64_variants.ORIGINAL),
 };
 ok((await e2ee.decryptField(key2, field2, aad)) === "hi from the SW", "app opens stablelib ciphertext (reverse)");
+
+// The container's length manifest crosses the same boundary. A worker serving a
+// byte range is exactly the reader that cannot tell a complete container from a
+// trimmed one, so the manifest has to open on this side too, byte for byte.
+console.log("\nmedia manifest, libsodium seal → worker open:");
+const fileKey = await e2ee.generateFileKey();
+const payload = Uint8Array.from({ length: Math.floor(e2ee.MEDIA_CHUNK_SIZE * 2.5) }, (_, i) => i % 251);
+const manifest = e2ee.mediaManifestFor(payload);
+const sealedManifest = await e2ee.sealMediaManifest(fileKey, manifest, "full");
+
+const swOpened = swOpenMediaManifest(b64(fileKey), sealedManifest, "full");
+ok(
+  swOpened !== null && swOpened.frames === manifest.frames && swOpened.bytes === manifest.bytes,
+  "the worker opens a manifest sealed by the main library",
+);
+ok(
+  swOpenMediaManifest(b64(fileKey), sealedManifest, "thumb") === null,
+  "the worker rejects a manifest sealed for another context",
+);
+ok(
+  swOpenMediaManifest(b64(await e2ee.generateFileKey()), sealedManifest, "full") === null,
+  "the worker rejects a manifest under the wrong file key",
+);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

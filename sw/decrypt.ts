@@ -21,6 +21,7 @@
  */
 import { XChaCha20Poly1305 } from "@stablelib/xchacha20poly1305";
 import { NONCE_BYTES } from "../src/media-format";
+import { MEDIA_MANIFEST_AAD } from "../src/aad";
 
 /** One sealed field as it travels in a push payload or key-wrap message. */
 export interface SealedFieldWire {
@@ -92,4 +93,39 @@ export function decryptFrame(
 export function unwrapFileKey(groupKeyBytes: Uint8Array, keyWrap: SealedFieldWire): Uint8Array | null {
   const b64 = decryptField(groupKeyBytes, { ...keyWrap, aad: "filekey" });
   return b64 ? b64ToBytes(b64) : null;
+}
+
+/** What a complete container holds. Mirrors `MediaManifest` in the main library. */
+export interface MediaManifestWire {
+  bytes: number;
+  frames: number;
+}
+
+/**
+ * Open a container's sealed length manifest with a raw file key.
+ *
+ * A worker serving a byte range cannot tell a complete container from one
+ * trimmed at a frame boundary: both are internally valid, and every frame it
+ * does open is authentic either way. The manifest is the only figure that
+ * survives the party storing the bytes, so a worker that wants to know the true
+ * length has to read it from here rather than infer it from what it received.
+ *
+ * Null on any failure, matching {@link decryptField}: a worker's recourse is to
+ * decline, not to throw into an event handler nobody is awaiting.
+ */
+export function openMediaManifest(
+  fileKeyBytes: Uint8Array,
+  sealed: SealedFieldWire,
+  context: string,
+): MediaManifestWire | null {
+  const json = decryptField(fileKeyBytes, { ...sealed, aad: `${MEDIA_MANIFEST_AAD}:${context}` });
+  if (json === null) return null;
+  try {
+    const parsed = JSON.parse(json) as MediaManifestWire;
+    if (!Number.isSafeInteger(parsed.bytes) || parsed.bytes < 0) return null;
+    if (!Number.isSafeInteger(parsed.frames) || parsed.frames < 1) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }

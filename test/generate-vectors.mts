@@ -87,6 +87,19 @@ const SECRET_BYTES = pattern(32, 53);
 const SECRET = b64(SECRET_BYTES);
 const wrapped = await e2ee.wrapSecret(SECRET_BYTES, PASSWORD);
 
+// --- media manifest: randomized seal, pin the open --------------------------
+// encryptField draws its own nonce, so this records one output and pins the
+// OPEN direction: this sealed manifest, under this file key and this context,
+// must yield these numbers in any correct implementation, forever.
+const MANIFEST_FILE_KEY = b64(pattern(32, 29));
+const MANIFEST_CONTEXT = "full";
+const MANIFEST = { bytes: 655370, frames: 3 };
+const sealedManifest = await e2ee.sealMediaManifest(
+  MANIFEST_FILE_KEY,
+  MANIFEST,
+  MANIFEST_CONTEXT,
+);
+
 const pair = await e2ee.generateKeyPair();
 const GROUP_KEY = b64(pattern(32, 71));
 const grant = await e2ee.grantGroupKey(GROUP_KEY, pair.publicKey);
@@ -99,6 +112,12 @@ process.stdout.write(
       note: "Regenerating this file is a wire-format event, not a fixture refresh.",
       fieldAead: fields,
       mediaContainer: { chunkSize: e2ee.MEDIA_CHUNK_SIZE, vectors: containers },
+      mediaManifest: {
+        fileKey: MANIFEST_FILE_KEY,
+        context: MANIFEST_CONTEXT,
+        manifest: MANIFEST,
+        sealed: sealedManifest,
+      },
       wrappedSecret: { password: PASSWORD, secret: SECRET, wrapped },
       sealedGrant: { groupKey: GROUP_KEY, recipient: pair, sealed: grant },
     },

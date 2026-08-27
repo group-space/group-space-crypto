@@ -60,3 +60,13 @@ export const DIRECTORY_PHONE_AAD = "directory.phone";
 export const DIRECTORY_ADDRESS_AAD = "directory.address";
 export const DIRECTORY_CHILD_NAME_AAD = "directory.child.name";
 export const DIRECTORY_CHILD_GRADE_AAD = "directory.child.grade";
+
+// The media container's length manifest. Every frame binds its own index, so
+// frames cannot be reordered or moved between files, and the Poly1305 tag
+// catches truncation INSIDE a frame. Nothing bound the number of frames, so
+// whole frames removed from the end produced a shorter file that opened
+// without error. Sealing the frame count and plaintext length under the file
+// key gives a reader something to check the container against that the party
+// storing it cannot forge. Composed with the container's context label, so a
+// "full" manifest can never stand in for a "thumb".
+export const MEDIA_MANIFEST_AAD = "media.manifest";

@@ -19,7 +19,13 @@ import { readFileSync } from "node:fs";
 import { XChaCha20Poly1305 } from "@stablelib/xchacha20poly1305";
 import { getSodium } from "../src/sodium.ts";
 import * as e2ee from "../src/e2ee.ts";
-import { b64ToBytes, decryptField as swDecryptField, decryptFrame as swDecryptFrame, unwrapFileKey } from "../sw/decrypt.ts";
+import {
+  b64ToBytes,
+  decryptField as swDecryptField,
+  decryptFrame as swDecryptFrame,
+  unwrapFileKey,
+  openMediaManifest as swOpenMediaManifest,
+} from "../sw/decrypt.ts";
 import { MEDIA_CHUNK_SIZE, NONCE_BYTES } from "../src/media-format.ts";
 
 const V = JSON.parse(readFileSync(new URL("./vectors/v1.json", import.meta.url), "utf8"));
@@ -95,6 +101,21 @@ console.log("\nThe filekey wrap: sealed by the app, unwrapped by the worker");
     viaWorker !== null && Buffer.compare(Buffer.from(viaWorker), Buffer.from(b64d(fileKey))) === 0);
   ok("the worker's base64 agrees with libsodium's",
     Buffer.compare(Buffer.from(b64ToBytes(fileKey)), Buffer.from(b64d(fileKey))) === 0);
+}
+
+console.log("\nThe media manifest: the recorded seal opens, in both implementations");
+{
+  const m = V.mediaManifest;
+  const opened = await e2ee.openMediaManifest(m.fileKey, m.sealed, m.context);
+  ok("the recorded manifest opens under the main library",
+    opened.bytes === m.manifest.bytes && opened.frames === m.manifest.frames);
+  const viaWorker = swOpenMediaManifest(b64d(m.fileKey), m.sealed, m.context);
+  ok("...and under the worker's implementation",
+    viaWorker !== null &&
+      viaWorker.bytes === m.manifest.bytes &&
+      viaWorker.frames === m.manifest.frames);
+  ok("...and not under another container's context",
+    swOpenMediaManifest(b64d(m.fileKey), m.sealed, "thumb") === null);
 }
 
 console.log("\nRandomized wraps: the recorded output opens, forever");
