@@ -107,6 +107,17 @@ caller upgrading old blobs attempts the purpose first, falls back to none, and
 re-wraps whatever it opened. That is a caller's decision and this library does
 not make it.
 
+**While that fallback is in place the binding provides no protection.** Nothing
+records whether a given blob was wrapped with a purpose, so a caller cannot
+tell one presented in the wrong slot from a legacy blob that never had one.
+Both fail the first attempt and both succeed on the second. A swap performed
+during the migration therefore opens the wrong key, which is the outcome the
+purpose exists to prevent. Keep the window short, and treat it as a migration
+step rather than a steady state.
+
+Callers must also finish migrating before considering a rollback: a
+purpose-bound blob does not open under a release that predates this section.
+
 ## 5. Field AEAD with context binding
 
 A text field sealed under the Group Key:
@@ -184,12 +195,23 @@ written. An empty file is one frame, matching §6. The AAD carries the
 container's context, so a `full` manifest cannot be presented as a `thumb`.
 
 It is stored beside the container's wrapped file key and supplied by the
-caller at open time. Supplying it is **optional and additive**: a reader that
-passes it gets the completeness check, a reader that does not is exactly where
-it was before, and no stored container changes. Range reads are the reason the
-count lives in a manifest rather than in a marker on the final frame: a reader
-fetching bytes from the middle of a video legitimately never sees the last
-frame, and cannot be asked to require one.
+caller at open time. Range reads are the reason the count lives in a manifest
+rather than in a marker on the final frame: a reader fetching bytes from the
+middle of a video legitimately never sees the last frame, and cannot be asked
+to require one.
+
+Supplying it is **optional**, which keeps every stored container readable and
+is also the limit of what this buys. The manifest is stored in the same record
+as the container, so a party willing to remove trailing frames can remove the
+manifest along with them, and a reader with no manifest has no way to know one
+was ever written. Detection therefore holds only where the reader requires a
+manifest and can tell a missing one from a file that never had one. That is a
+caller's arrangement, not a property this format supplies on its own, and it is
+not yet in place: no caller passes a manifest today.
+
+Closing it means putting the figures somewhere a host cannot strip without
+breaking decryption outright, so that a missing manifest is indistinguishable
+from a broken file rather than from an ordinary one.
 
 ## 7. Recovery codes
 

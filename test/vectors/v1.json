@@ -5,7 +5,7 @@
   "fieldAead": [
     {
       "aad": "discussion.post.body",
-      "plaintext": "Can someone cover carpool Friday? \ud83d\ude97",
+      "plaintext": "Can someone cover carpool Friday? 🚗",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
         "nonce": "uj2H/Bkt3KtAiHsIXBCj0u5YKcIGaLys",

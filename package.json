@@ -74,7 +74,7 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:crypto && npm run test:rewrap && npm run test:media-range && npm run test:interop",
+    "test": "npm run test:crypto && npm run test:rewrap && npm run test:media-range && npm run test:interop && npm run test:vectors",
     "test:crypto": "tsx test/crypto-selftest.mts",
     "test:rewrap": "tsx test/rewrap-selftest.mts",
     "test:media-range": "tsx test/media-range-selftest.mts",

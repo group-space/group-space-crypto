@@ -87,22 +87,30 @@ export async function randomBytes(n: number): Promise<Uint8Array> {
 /**
  * The AAD for a passphrase wrap, or null when the caller names no purpose.
  *
- * `undefined` has to mean exactly what it meant before this parameter existed,
+ * Absent has to mean exactly what it meant before this parameter existed,
  * because every blob wrapped up to that point sealed with a null AAD and has to
- * keep opening. That is the whole compatibility story in one line, so it is
- * written once here rather than repeated at both call sites.
+ * keep opening.
+ *
+ * `null` counts as absent alongside `undefined`. Consumers of a published
+ * package are not all TypeScript, and a caller reading an id from a record
+ * where it is nullable would otherwise seal under the literal
+ * `wrap.secret:null` and never open that blob again with the real id. Empty
+ * throws instead of being coerced, because a caller passing one meant to pass
+ * something.
  */
 function wrapAad(
   s: Awaited<ReturnType<typeof getSodium>>,
-  purpose: string | undefined,
+  purpose: string | null | undefined,
 ): Uint8Array | null {
-  return purpose === undefined ? null : s.from_string(`${WRAPPED_SECRET_AAD}:${purpose}`);
+  if (purpose == null) return null;
+  if (purpose === "") throw new Error("wrapSecret: purpose must be a non-empty string, or absent");
+  return s.from_string(`${WRAPPED_SECRET_AAD}:${purpose}`);
 }
 
 export async function wrapSecret(
   secret: Uint8Array,
   passphrase: string,
-  purpose?: string,
+  purpose?: string | null,
 ): Promise<WrappedSecret> {
   const s = await getSodium();
   const { ops, mem } = await argonDefaults();
@@ -130,7 +138,7 @@ export async function wrapSecret(
 export async function unwrapSecret(
   wrapped: WrappedSecret,
   passphrase: string,
-  purpose?: string,
+  purpose?: string | null,
 ): Promise<Uint8Array> {
   const s = await getSodium();
   const key = s.crypto_pwhash(
@@ -170,7 +178,7 @@ export async function generateKeyPair(): Promise<KeyPair> {
 export async function wrapPrivateKey(
   privateKey: string,
   password: string,
-  purpose?: string,
+  purpose?: string | null,
 ): Promise<WrappedSecret> {
   return wrapSecret(await b64decode(privateKey), password, purpose);
 }
@@ -185,7 +193,7 @@ export async function wrapPrivateKey(
 export async function unwrapPrivateKey(
   wrapped: WrappedSecret,
   password: string,
-  purpose?: string,
+  purpose?: string | null,
 ): Promise<string> {
   return b64encode(await unwrapSecret(wrapped, password, purpose));
 }
@@ -497,10 +505,27 @@ export interface MediaManifest {
  * every container has at least one frame.
  */
 export function mediaManifestFor(bytes: Uint8Array): MediaManifest {
-  return {
-    bytes: bytes.length,
-    frames: Math.max(1, Math.ceil(bytes.length / MEDIA_CHUNK_SIZE)),
-  };
+  return mediaManifestForLength(bytes.length);
+}
+
+/**
+ * The manifest for a plaintext of `length` bytes, without holding the bytes.
+ *
+ * The streaming writers take a `Blob` and never materialize it, so they cannot
+ * call {@link mediaManifestFor}. Without this they would each recompute the
+ * frame count from `blob.size`, which is a second encoder: get it wrong and the
+ * manifest permanently rejects a container that was written correctly.
+ */
+export function mediaManifestForLength(length: number): MediaManifest {
+  if (!Number.isSafeInteger(length) || length < 0) {
+    throw new Error("media manifest: length is not a valid plaintext size");
+  }
+  return { bytes: length, frames: framesFor(length) };
+}
+
+/** Frames a container of `length` plaintext bytes holds. Empty is still one. */
+function framesFor(length: number): number {
+  return Math.max(1, Math.ceil(length / MEDIA_CHUNK_SIZE));
 }
 
 /**
@@ -525,14 +550,28 @@ export async function openMediaManifest(
   context: string,
 ): Promise<MediaManifest> {
   const json = await decryptField(fileKey, sealed, `${MEDIA_MANIFEST_AAD}:${context}`);
-  const parsed = JSON.parse(json) as MediaManifest;
+  let parsed: MediaManifest;
+  try {
+    parsed = JSON.parse(json) as MediaManifest;
+  } catch {
+    throw new Error("media manifest: not valid JSON");
+  }
+  if (parsed === null || typeof parsed !== "object") {
+    throw new Error("media manifest: not an object");
+  }
   if (!Number.isSafeInteger(parsed.bytes) || parsed.bytes < 0) {
     throw new Error("media manifest: bytes is not a valid length");
   }
   if (!Number.isSafeInteger(parsed.frames) || parsed.frames < 1) {
     throw new Error("media manifest: frames is not a valid count");
   }
-  return parsed;
+  // frames is fully determined by bytes, in every encoder here. Checking the
+  // pair makes the manifest self-validating: a figure that disagrees with
+  // itself is rejected before it can reject a container that was fine.
+  if (parsed.frames !== framesFor(parsed.bytes)) {
+    throw new Error("media manifest: frames does not match bytes");
+  }
+  return { bytes: parsed.bytes, frames: parsed.frames };
 }
 
 export async function decryptBytes(
@@ -607,7 +646,7 @@ export async function generateRecoveryCode(): Promise<string> {
 export async function wrapGroupKeyForRecovery(
   groupKey: string,
   recoveryCode: string,
-  purpose?: string,
+  purpose?: string | null,
 ): Promise<WrappedSecret> {
   return wrapSecret(await b64decode(groupKey), normalizeRecoveryCode(recoveryCode), purpose);
 }
@@ -616,7 +655,7 @@ export async function wrapGroupKeyForRecovery(
 export async function openGroupKeyWithRecovery(
   wrapped: WrappedSecret,
   recoveryCode: string,
-  purpose?: string,
+  purpose?: string | null,
 ): Promise<string> {
   return b64encode(await unwrapSecret(wrapped, normalizeRecoveryCode(recoveryCode), purpose));
 }

@@ -20,7 +20,7 @@
  * imports these instead of carrying private copies.
  */
 import { XChaCha20Poly1305 } from "@stablelib/xchacha20poly1305";
-import { NONCE_BYTES } from "../src/media-format";
+import { NONCE_BYTES, MEDIA_CHUNK_SIZE } from "../src/media-format";
 import { MEDIA_MANIFEST_AAD } from "../src/aad";
 
 /** One sealed field as it travels in a push payload or key-wrap message. */
@@ -122,9 +122,14 @@ export function openMediaManifest(
   if (json === null) return null;
   try {
     const parsed = JSON.parse(json) as MediaManifestWire;
+    if (parsed === null || typeof parsed !== "object") return null;
     if (!Number.isSafeInteger(parsed.bytes) || parsed.bytes < 0) return null;
     if (!Number.isSafeInteger(parsed.frames) || parsed.frames < 1) return null;
-    return parsed;
+    // Same pair check as the main library. Two implementations that validate
+    // differently are two implementations that disagree about which files are
+    // readable, which is the drift the interop suite exists to prevent.
+    if (parsed.frames !== Math.max(1, Math.ceil(parsed.bytes / MEDIA_CHUNK_SIZE))) return null;
+    return { bytes: parsed.bytes, frames: parsed.frames };
   } catch {
     return null;
   }
