@@ -10,6 +10,7 @@
  */
 import * as e2ee from "../src/e2ee.ts";
 import { FULL_FRAME_BYTES } from "../src/media-format.ts";
+import { MEDIA_MANIFEST_AAD } from "../src/aad.ts";
 
 let pass = 0;
 let fail = 0;
@@ -179,6 +180,26 @@ await throws(
 await throws(
   () => e2ee.decryptBytes(fileKey, fullEnc, "full", { bytes: big.length - 1, frames: 3 }),
   "a manifest claiming a different length is rejected",
+);
+
+// A manifest that opens is not the same as a manifest that means anything. The
+// seal proves who wrote it, not that the numbers inside are numbers. Anyone
+// holding the file key can seal nonsense, and a zero frame count read as
+// authoritative would wave through an empty container.
+async function sealRawManifest(value: unknown) {
+  return e2ee.encryptField(fileKey, JSON.stringify(value), `${MEDIA_MANIFEST_AAD}:full`);
+}
+await throws(
+  async () => e2ee.openMediaManifest(fileKey, await sealRawManifest({ bytes: 10, frames: 0 }), "full"),
+  "a validly sealed manifest claiming zero frames is rejected",
+);
+await throws(
+  async () => e2ee.openMediaManifest(fileKey, await sealRawManifest({ bytes: -1, frames: 3 }), "full"),
+  "a validly sealed manifest claiming a negative length is rejected",
+);
+await throws(
+  async () => e2ee.openMediaManifest(fileKey, await sealRawManifest({ bytes: 10, frames: 1.5 }), "full"),
+  "a validly sealed manifest claiming a fractional frame count is rejected",
 );
 
 console.log("streaming media encryption (encryptBlobFrames / encryptBlobToBlob):");
