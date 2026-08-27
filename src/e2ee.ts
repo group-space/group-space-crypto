@@ -238,56 +238,9 @@ export async function unwrapFileKey(wrapped: SealedField, groupKey: string): Pro
 }
 
 /**
- * Encrypt one media chunk. The chunk index is bound as AAD so chunks can't be
- * reordered, and a random nonce is stored per chunk. Returns `nonce || ct` as
- * base64; the client fetches a byte range, splits the nonce, and decrypts,
- * enabling seek/streaming without the server ever seeing plaintext.
- */
-export async function encryptChunk(
-  fileKey: string,
-  index: number,
-  plaintext: Uint8Array,
-): Promise<string> {
-  const s = await getSodium();
-  const key = await b64decode(fileKey);
-  const nonce = s.randombytes_buf(s.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
-  const ct = s.crypto_aead_xchacha20poly1305_ietf_encrypt(
-    plaintext,
-    s.from_string(String(index)),
-    null,
-    nonce,
-    key,
-  );
-  const packed = new Uint8Array(nonce.length + ct.length);
-  packed.set(nonce, 0);
-  packed.set(ct, nonce.length);
-  return b64encode(packed);
-}
-
-/** Reverse of {@link encryptChunk} for a given chunk index. */
-export async function decryptChunk(
-  fileKey: string,
-  index: number,
-  packedB64: string,
-): Promise<Uint8Array> {
-  const s = await getSodium();
-  const packed = await b64decode(packedB64);
-  const nlen = s.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
-  const nonce = packed.subarray(0, nlen);
-  const ct = packed.subarray(nlen);
-  return s.crypto_aead_xchacha20poly1305_ietf_decrypt(
-    null,
-    ct,
-    s.from_string(String(index)),
-    nonce,
-    await b64decode(fileKey),
-  );
-}
-
-/**
  * Whole-file byte encryption for media at rest: a self-framing binary container
- * built on the same per-chunk AEAD as {@link encryptChunk}, but returning raw
- * bytes (no base64 bloat) suitable for writing straight to disk / a Blob.
+ * built on a per-chunk AEAD, returning raw bytes (no base64 bloat) suitable for
+ * writing straight to disk / a Blob.
  *
  * Layout: the concatenation of per-chunk frames, each `nonce || ciphertext`.
  * Every chunk but the last carries exactly {@link MEDIA_CHUNK_SIZE} plaintext,

@@ -68,19 +68,12 @@ await throws(
   "tampered ciphertext is rejected",
 );
 
-console.log("media chunks:");
+console.log("per-file keys:");
 const fileKey = await e2ee.generateFileKey();
 ok(
   (await e2ee.unwrapFileKey(await e2ee.wrapFileKey(fileKey, gk), gk)) === fileKey,
   "file key wraps/unwraps under the Group Key",
 );
-const c0 = new Uint8Array([1, 2, 3, 4, 5]);
-const c1 = new Uint8Array([9, 8, 7, 6]);
-const e0 = await e2ee.encryptChunk(fileKey, 0, c0);
-const e1 = await e2ee.encryptChunk(fileKey, 1, c1);
-ok(Buffer.from(await e2ee.decryptChunk(fileKey, 0, e0)).equals(Buffer.from(c0)), "chunk 0 roundtrips");
-ok(Buffer.from(await e2ee.decryptChunk(fileKey, 1, e1)).equals(Buffer.from(c1)), "chunk 1 roundtrips");
-await throws(() => e2ee.decryptChunk(fileKey, 5, e0), "decrypting a chunk at the wrong index is rejected");
 
 console.log("whole-file byte encryption (encryptBytes / decryptBytes):");
 async function roundtrips(bytes: Uint8Array, ctx: string, label: string) {

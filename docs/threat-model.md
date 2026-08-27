@@ -59,6 +59,14 @@ The server necessarily sees, and this protocol does not hide:
 - **Password-derived keys are as strong as the password.** Argon2id at
   interactive cost raises the price of guessing; it does not make a weak
   password strong.
+- **The AEAD is not key-committing.** XChaCha20-Poly1305 permits a ciphertext
+  crafted to decrypt validly under two different keys, the partitioning-oracle
+  class of attack. No flow here selects a key by testing which one opens a
+  ciphertext, so nothing in the current design turns this into a break, and it
+  is accepted rather than mitigated. It is recorded because it constrains what
+  can be built later: a key-selection or multi-recipient path would need a
+  committing construction, decided at that point and not retrofitted after the
+  fact.
 
 If your safety depends on getting this exactly right against a resourced,
 targeted adversary, use tools built and audited for that work, and the
