@@ -315,6 +315,14 @@ for (const [size, label] of [
   await opens(`${label}: the complete container passes its own manifest`, async () =>
     (await e2ee.decryptBytes(fileKey, container, "full", manifest)).length === size);
 
+  // Every size, including the single-frame ones, must reject a manifest that
+  // disagrees with the container. Without this the check can be skipped for
+  // small media and only the multi-frame sizes would notice.
+  await throws(
+    () => e2ee.decryptBytes(fileKey, container, "full", { bytes: size + 1, frames: manifest.frames }),
+    `${label}: a manifest claiming one byte more is rejected`,
+  );
+
   // Drop the last frame. A one-frame container has nothing left to check, so
   // the assertion there is that the manifest still accepts the whole thing.
   if (manifest.frames > 1) {
