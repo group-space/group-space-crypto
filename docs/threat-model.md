@@ -47,9 +47,7 @@ The server necessarily sees, and this protocol does not hide:
 - object sizes and timing: the *shape* of activity, not its content,
 - email addresses (they are the login credential and recovery channel),
 - in the shipping parent-market product: display names and group names
-  (rendered before a viewer holds any key). Narrowing this specific line is
-  the active engineering programme; narrowing is not removal, and no copy
-  anywhere should imply the metadata line can reach zero.
+  (rendered before a viewer holds any key).
 
 ## Standing limits
 

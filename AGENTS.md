@@ -19,10 +19,16 @@ vector is stale. Regenerating it (`npm run vectors:generate`) is a deliberate
 act that needs a reason in the commit message. A vector regenerated to make a
 red build green is a data-loss incident with a passing CI badge.
 
-**3. No attribution to AI tooling.** No `Co-Authored-By` trailers naming an
-assistant, no session links, no generated-with footers, and no mention of any
-model in code, comments, docs, or commit messages. This is a deliberate
-difference from the private app repository, which keeps them.
+**3. Keep attribution to AI tooling out of the working artifacts.** No
+`Co-Authored-By` trailers naming an assistant, no session links, and no
+generated-with footers in code, comments, or commit messages. This is a
+deliberate difference from the private app repository, which keeps them.
+
+The rule is about not dressing up routine authorship, so it yields where naming
+the tool is the honest disclosure rather than a credit. A security review states
+how it was produced, because that is what lets a reader weigh it; concealing it
+would be the kind of overclaim `SECURITY.md` treats as a bug. Provenance of that
+sort belongs in the document. Everything else should stay clean.
 
 ## Prose and comment style
 
