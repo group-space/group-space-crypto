@@ -105,7 +105,7 @@ const sealedManifest = await e2ee.sealMediaManifest(
 // recorded before purposes existed and must keep opening with none given. This
 // records the other half: a wrap bound to a slot, which must keep opening under
 // that slot and no other.
-const BOUND_PURPOSE = "member:vector";
+const BOUND_PURPOSE = "member-vector";
 const BOUND_SECRET_BYTES = pattern(32, 97);
 const BOUND_SECRET = b64(BOUND_SECRET_BYTES);
 const boundWrapped = await e2ee.wrapSecret(BOUND_SECRET_BYTES, PASSWORD, BOUND_PURPOSE);

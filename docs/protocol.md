@@ -90,7 +90,9 @@ result is a failure somewhere further down rather than a disclosure, which
 makes it a robustness problem and an unusually confusing one to diagnose.
 
 The tag is a caller-chosen string, a membership id or a role, and the library
-composes it:
+composes it. It must not be empty and must not contain a colon: the colon is
+the separator, so `("a:b", "c")` and `("a", "b:c")` would otherwise produce the
+same AAD and each blob would open in the other's slot. Both are refused.
 
 ```
 ad = utf8("wrap.secret" ":" purpose)     when a purpose is given
@@ -168,6 +170,15 @@ The AAD binds each frame to its **index within its context** (`"full:0"`,
 `"full:1"`, …), so frames cannot be reordered, dropped from the middle,
 duplicated, or transplanted between files without the open failing. An empty
 file is one frame sealing zero bytes (24 + 0 + 16 = 40 bytes of ciphertext).
+
+A `context` must not be a bare integer, must not contain a colon, and must not
+begin with a label from the registry in `src/aad.ts`. The frame AAD carries no
+prefix of its own, so `<context>:<index>` shares a string space with the
+composed labels used elsewhere under the same key; a context drawn from outside
+that set keeps the two apart. This is a constraint on callers rather than
+something the format enforces, because contexts predate it and validating them
+now would refuse containers already written. The shipped contexts (`"full"`,
+`"thumb"`, and the avatar context) satisfy it.
 
 Range arithmetic over this geometry (`src/media-range.ts`) is pure integer
 math shared by the app, the service worker, and the tests: byte range of the

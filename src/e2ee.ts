@@ -104,6 +104,14 @@ function wrapAad(
 ): Uint8Array | null {
   if (purpose == null) return null;
   if (purpose === "") throw new Error("wrapSecret: purpose must be a non-empty string, or absent");
+  // A colon is the separator, so a purpose containing one makes the composition
+  // ambiguous: ("a:b", "c") and ("a", "b:c") would produce the same AAD and the
+  // two blobs would open in each other's slot. Refusing it is cheaper than
+  // length-prefixing, and has to happen now: once a release writes blobs under
+  // this composition it is frozen. Compose with any other separator.
+  if (purpose.includes(":")) {
+    throw new Error("wrapSecret: purpose must not contain ':', which separates it from its label");
+  }
   return s.from_string(`${WRAPPED_SECRET_AAD}:${purpose}`);
 }
 

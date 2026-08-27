@@ -78,18 +78,18 @@ ok(
   "without a purpose, either blob opens in either slot",
 );
 
-const boundA = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", "member:A");
-const boundB = await e2ee.wrapPrivateKey(memberB.privateKey, "one password", "member:B");
+const boundA = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", "member-A");
+const boundB = await e2ee.wrapPrivateKey(memberB.privateKey, "one password", "member-B");
 ok(
-  (await e2ee.unwrapPrivateKey(boundA, "one password", "member:A")) === memberA.privateKey,
+  (await e2ee.unwrapPrivateKey(boundA, "one password", "member-A")) === memberA.privateKey,
   "a purpose-bound key opens in its own slot",
 );
 await throws(
-  () => e2ee.unwrapPrivateKey(boundB, "one password", "member:A"),
+  () => e2ee.unwrapPrivateKey(boundB, "one password", "member-A"),
   "B's blob does not open in A's slot",
 );
 await throws(
-  () => e2ee.unwrapPrivateKey(boundA, "one password", "member:B"),
+  () => e2ee.unwrapPrivateKey(boundA, "one password", "member-B"),
   "A's blob does not open in B's slot",
 );
 
@@ -100,7 +100,7 @@ await throws(
   "a purpose-bound blob does not open with no purpose given",
 );
 await throws(
-  () => e2ee.unwrapPrivateKey(bareA, "one password", "member:A"),
+  () => e2ee.unwrapPrivateKey(bareA, "one password", "member-A"),
   "a blob wrapped with no purpose does not open under one",
 );
 
@@ -116,7 +116,7 @@ ok(
 // The purpose is a context label, not a second password. A wrong passphrase
 // fails whether or not the slot is right.
 await throws(
-  () => e2ee.unwrapPrivateKey(boundA, "wrong password", "member:A"),
+  () => e2ee.unwrapPrivateKey(boundA, "wrong password", "member-A"),
   "the right slot does not rescue a wrong passphrase",
 );
 
@@ -136,17 +136,23 @@ await throws(
   () => e2ee.wrapSecret(secret, "one password", ""),
   "an empty purpose is refused rather than quietly treated as absent",
 );
+// A colon separates the label from the purpose, so one inside the purpose makes
+// the composition ambiguous: ("a:b","c") and ("a","b:c") would collide.
+await throws(
+  () => e2ee.wrapSecret(secret, "one password", "member:A"),
+  "a purpose containing the separator is refused",
+);
 
 // The purpose is used verbatim. Nothing normalizes it, and a later tidy-up
 // that trimmed or lowercased it would change which blobs open.
-const spaced = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", " member:A ");
+const spaced = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", " member-A ");
 await throws(
-  () => e2ee.unwrapPrivateKey(spaced, "one password", "member:A"),
+  () => e2ee.unwrapPrivateKey(spaced, "one password", "member-A"),
   "a purpose is not trimmed",
 );
-const cased = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", "Member:A");
+const cased = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", "Member-A");
 await throws(
-  () => e2ee.unwrapPrivateKey(cased, "one password", "member:A"),
+  () => e2ee.unwrapPrivateKey(cased, "one password", "member-A"),
   "a purpose is not lowercased",
 );
 
@@ -154,13 +160,13 @@ await throws(
 // group it belongs to rather than being a free-floating wrap of a Group Key.
 const recoveredGk = await e2ee.generateGroupKey();
 const recoveryCode = await e2ee.generateRecoveryCode();
-const boundRecovery = await e2ee.wrapGroupKeyForRecovery(recoveredGk, recoveryCode, "group:1");
+const boundRecovery = await e2ee.wrapGroupKeyForRecovery(recoveredGk, recoveryCode, "group-1");
 ok(
-  (await e2ee.openGroupKeyWithRecovery(boundRecovery, recoveryCode, "group:1")) === recoveredGk,
+  (await e2ee.openGroupKeyWithRecovery(boundRecovery, recoveryCode, "group-1")) === recoveredGk,
   "a recovery wrap opens for its own group",
 );
 await throws(
-  () => e2ee.openGroupKeyWithRecovery(boundRecovery, recoveryCode, "group:2"),
+  () => e2ee.openGroupKeyWithRecovery(boundRecovery, recoveryCode, "group-2"),
   "a recovery wrap does not open for another group",
 );
 
