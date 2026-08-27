@@ -40,6 +40,24 @@ const ok = (n: string, c: boolean, d = "") => {
   pass++; console.log(`  ✓ ${n}`);
 };
 
+/**
+ * For assertions whose failure mode is a THROW rather than a false.
+ *
+ * A recorded vector that stops opening raises inside libsodium, and an uncaught
+ * throw here ends the run with a stack trace through the WASM bundle. The one
+ * assertion in this repository that means "every stored blob just became
+ * unreadable" was reporting itself as a crash, which is the worst possible
+ * presentation for the most important thing the suite checks. Now it reports as
+ * a named failure and the rest of the vectors still get to run.
+ */
+async function opens(name: string, f: () => Promise<boolean>) {
+  try {
+    ok(name, await f());
+  } catch (e) {
+    ok(name, false, `threw: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
 function pattern(n: number, seed: number): Uint8Array {
   const out = new Uint8Array(n);
   for (let i = 0; i < n; i++) out[i] = (i * 7 + seed) % 251;
@@ -106,9 +124,10 @@ console.log("\nThe filekey wrap: sealed by the app, unwrapped by the worker");
 console.log("\nThe media manifest: the recorded seal opens, in both implementations");
 {
   const m = V.mediaManifest;
-  const opened = await e2ee.openMediaManifest(m.fileKey, m.sealed, m.context);
-  ok("the recorded manifest opens under the main library",
-    opened.bytes === m.manifest.bytes && opened.frames === m.manifest.frames);
+  await opens("the recorded manifest opens under the main library", async () => {
+    const opened = await e2ee.openMediaManifest(m.fileKey, m.sealed, m.context);
+    return opened.bytes === m.manifest.bytes && opened.frames === m.manifest.frames;
+  });
   const viaWorker = swOpenMediaManifest(b64d(m.fileKey), m.sealed, m.context);
   ok("...and under the worker's implementation",
     viaWorker !== null &&
@@ -121,8 +140,10 @@ console.log("\nThe media manifest: the recorded seal opens, in both implementati
 console.log("\nRandomized wraps: the recorded output opens, forever");
 {
   const w = V.wrappedSecret;
-  const opened = await e2ee.unwrapSecret(w.wrapped, w.password);
-  ok("Argon2id wrap opens under the recorded password", b64e(opened) === w.secret);
+  // Recorded before purposes existed, so it carries no AAD. If this stops
+  // opening, every blob wrapped up to that point stopped opening too.
+  await opens("Argon2id wrap opens under the recorded password", async () =>
+    b64e(await e2ee.unwrapSecret(w.wrapped, w.password)) === w.secret);
   let refused = false;
   try {
     const x = await e2ee.unwrapSecret(w.wrapped, w.password + "!");
@@ -133,8 +154,8 @@ console.log("\nRandomized wraps: the recorded output opens, forever");
   ok("...and refuses a wrong password", refused);
 
   const b = V.wrappedSecretWithPurpose;
-  const boundOpened = await e2ee.unwrapSecret(b.wrapped, b.password, b.purpose);
-  ok("a purpose-bound wrap opens under its recorded purpose", b64e(boundOpened) === b.secret);
+  await opens("a purpose-bound wrap opens under its recorded purpose", async () =>
+    b64e(await e2ee.unwrapSecret(b.wrapped, b.password, b.purpose)) === b.secret);
   let refusedSlot = false;
   try {
     const x = await e2ee.unwrapSecret(b.wrapped, b.password, "member:someone-else");
@@ -153,7 +174,7 @@ console.log("\nRandomized wraps: the recorded output opens, forever");
   ok("...and refuses no purpose at all", refusedNone);
 
   const g = V.sealedGrant;
-  ok("the sealed-box grant opens for its recipient",
+  await opens("the sealed-box grant opens for its recipient", async () =>
     (await e2ee.openGroupKeyGrant(g.sealed, g.recipient)) === g.groupKey);
 }
 
