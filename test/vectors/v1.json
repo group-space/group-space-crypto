@@ -120,6 +120,18 @@
       "mem": 67108864
     }
   },
+  "wrappedSecretWithPurpose": {
+    "password": "correct horse battery staple",
+    "purpose": "member:vector",
+    "secret": "YWhvdn2Ei5KZoKeutbzDytHY3+bt9AAHDhUcIyoxOD8=",
+    "wrapped": {
+      "salt": "0Y/1suaKS2vS8rC8WqBYCQ==",
+      "nonce": "mM7gWam/XZFcIhAcC9ohY18AZC+9pYmd",
+      "ciphertext": "ewfwqU2/7/d+7x4jQ7GeGHNIoYsxRFmtYymc+AzN98U4ix2aDIMadFob/wMBoUAn",
+      "ops": 2,
+      "mem": 67108864
+    }
+  },
   "sealedGrant": {
     "groupKey": "R05VXGNqcXh/ho2Um6KpsLe+xczT2uHo7/YCCRAXHiU=",
     "recipient": {

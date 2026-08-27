@@ -80,6 +80,33 @@ version. New wraps use libsodium's `INTERACTIVE` limits (mobile-safe, ≈ 64 MB)
 old blobs open with whatever they recorded. Raising the defaults never breaks
 an existing wrap.
 
+### 4.1 The purpose tag
+
+A wrap can name the slot it belongs in. Without one, two blobs wrapped under a
+single passphrase are interchangeable: one account holding several membership
+private keys under one password is the case that matters, and swapping two of
+them hands the holder the wrong key in the right slot. Keys are random, so the
+result is a failure somewhere further down rather than a disclosure, which
+makes it a robustness problem and an unusually confusing one to diagnose.
+
+The tag is a caller-chosen string, a membership id or a role, and the library
+composes it:
+
+```
+ad = utf8("wrap.secret" ":" purpose)     when a purpose is given
+ad = none                                when it is not
+```
+
+Nothing about the `WrappedSecret` shape changes, and the tag is not stored: as
+in §5, both sides know the label from context. Naming no purpose behaves
+exactly as it did before purposes existed, which is what keeps every previously
+wrapped blob openable.
+
+A blob wrapped with a purpose does not open without one, and the reverse, so a
+caller upgrading old blobs attempts the purpose first, falls back to none, and
+re-wraps whatever it opened. That is a caller's decision and this library does
+not make it.
+
 ## 5. Field AEAD with context binding
 
 A text field sealed under the Group Key:
@@ -184,8 +211,9 @@ The following can never change within format v1:
 - the base64 variant (§2),
 - the `WrappedSecret` and `SealedField` shapes (§4, §5),
 - every AAD label already in the registry (`src/aad.ts`); labels may be
-  **added**, never renamed or removed (`media.manifest`, §6.1, was added this
-  way and is now frozen on the same terms),
+  **added**, never renamed or removed (`media.manifest` in §6.1 and
+  `wrap.secret` in §4.1 were both added this way and are now frozen on the same
+  terms),
 - every constant in §6, and the frame layout,
 - the recovery alphabet and normalization (§7).
 

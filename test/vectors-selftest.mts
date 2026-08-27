@@ -132,6 +132,26 @@ console.log("\nRandomized wraps: the recorded output opens, forever");
   }
   ok("...and refuses a wrong password", refused);
 
+  const b = V.wrappedSecretWithPurpose;
+  const boundOpened = await e2ee.unwrapSecret(b.wrapped, b.password, b.purpose);
+  ok("a purpose-bound wrap opens under its recorded purpose", b64e(boundOpened) === b.secret);
+  let refusedSlot = false;
+  try {
+    const x = await e2ee.unwrapSecret(b.wrapped, b.password, "member:someone-else");
+    refusedSlot = b64e(x) !== b.secret;
+  } catch {
+    refusedSlot = true;
+  }
+  ok("...and refuses another purpose", refusedSlot);
+  let refusedNone = false;
+  try {
+    const x = await e2ee.unwrapSecret(b.wrapped, b.password);
+    refusedNone = b64e(x) !== b.secret;
+  } catch {
+    refusedNone = true;
+  }
+  ok("...and refuses no purpose at all", refusedNone);
+
   const g = V.sealedGrant;
   ok("the sealed-box grant opens for its recipient",
     (await e2ee.openGroupKeyGrant(g.sealed, g.recipient)) === g.groupKey);

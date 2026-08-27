@@ -70,3 +70,17 @@ export const DIRECTORY_CHILD_GRADE_AAD = "directory.child.grade";
 // storing it cannot forge. Composed with the container's context label, so a
 // "full" manifest can never stand in for a "thumb".
 export const MEDIA_MANIFEST_AAD = "media.manifest";
+
+// The purpose tag on a passphrase-wrapped secret. A WrappedSecret seals with no
+// context of its own, so two blobs wrapped under one passphrase, several
+// membership private keys under a single account password for instance, are
+// interchangeable: swapping them hands the holder the wrong key in the right
+// slot. Because keys are random the visible result is a failure further down
+// rather than a disclosure, which makes it a robustness problem, and a
+// confusing one to diagnose.
+//
+// Composed with a caller-chosen purpose, so the caller supplies the identity
+// (a membership id, a role) and never has to know this prefix. Passing no
+// purpose keeps the original null-AAD behaviour exactly, which is what lets
+// every blob wrapped before this existed keep opening.
+export const WRAPPED_SECRET_AAD = "wrap.secret";

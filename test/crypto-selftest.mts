@@ -51,6 +51,76 @@ const wpk = await e2ee.wrapPrivateKey(kp.privateKey, "hunter2");
 ok((await e2ee.unwrapPrivateKey(wpk, "hunter2")) === kp.privateKey, "private key roundtrips via password");
 await throws(() => e2ee.unwrapPrivateKey(wpk, "nope"), "wrong password cannot unwrap private key");
 
+console.log("wrap purpose (the slot a wrapped blob belongs in):");
+// The case the purpose exists for: one password, several membership keys. Two
+// blobs with no purpose are interchangeable, so a swap unlocks the wrong key in
+// the right slot and the failure surfaces somewhere else entirely.
+const memberA = await e2ee.generateKeyPair();
+const memberB = await e2ee.generateKeyPair();
+const bareA = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", undefined);
+const bareB = await e2ee.wrapPrivateKey(memberB.privateKey, "one password", undefined);
+ok(
+  (await e2ee.unwrapPrivateKey(bareB, "one password")) === memberB.privateKey &&
+    (await e2ee.unwrapPrivateKey(bareA, "one password")) === memberA.privateKey,
+  "without a purpose, either blob opens in either slot",
+);
+
+const boundA = await e2ee.wrapPrivateKey(memberA.privateKey, "one password", "member:A");
+const boundB = await e2ee.wrapPrivateKey(memberB.privateKey, "one password", "member:B");
+ok(
+  (await e2ee.unwrapPrivateKey(boundA, "one password", "member:A")) === memberA.privateKey,
+  "a purpose-bound key opens in its own slot",
+);
+await throws(
+  () => e2ee.unwrapPrivateKey(boundB, "one password", "member:A"),
+  "B's blob does not open in A's slot",
+);
+await throws(
+  () => e2ee.unwrapPrivateKey(boundA, "one password", "member:B"),
+  "A's blob does not open in B's slot",
+);
+
+// Both directions of the migration boundary, because a caller upgrading old
+// blobs depends on each failing rather than quietly succeeding.
+await throws(
+  () => e2ee.unwrapPrivateKey(boundA, "one password"),
+  "a purpose-bound blob does not open with no purpose given",
+);
+await throws(
+  () => e2ee.unwrapPrivateKey(bareA, "one password", "member:A"),
+  "a blob wrapped with no purpose does not open under one",
+);
+
+// Omitting the argument has to behave exactly as it did before the argument
+// existed, or every blob wrapped up to now stops opening. The committed vectors
+// carry the real historical case; this pins the same property at the API.
+const explicitNone = await e2ee.wrapSecret(secret, "correct horse");
+ok(
+  Buffer.from(await e2ee.unwrapSecret(explicitNone, "correct horse")).equals(Buffer.from(secret)),
+  "omitting the purpose still wraps and opens",
+);
+
+// The purpose is a context label, not a second password. A wrong passphrase
+// fails whether or not the slot is right.
+await throws(
+  () => e2ee.unwrapPrivateKey(boundA, "wrong password", "member:A"),
+  "the right slot does not rescue a wrong passphrase",
+);
+
+// The group recovery wrap takes one too, so a recovery blob is bound to the
+// group it belongs to rather than being a free-floating wrap of a Group Key.
+const recoveredGk = await e2ee.generateGroupKey();
+const recoveryCode = await e2ee.generateRecoveryCode();
+const boundRecovery = await e2ee.wrapGroupKeyForRecovery(recoveredGk, recoveryCode, "group:1");
+ok(
+  (await e2ee.openGroupKeyWithRecovery(boundRecovery, recoveryCode, "group:1")) === recoveredGk,
+  "a recovery wrap opens for its own group",
+);
+await throws(
+  () => e2ee.openGroupKeyWithRecovery(boundRecovery, recoveryCode, "group:2"),
+  "a recovery wrap does not open for another group",
+);
+
 console.log("group key granting (sealed boxes):");
 const gk = await e2ee.generateGroupKey();
 const grant = await e2ee.grantGroupKey(gk, kp.publicKey);

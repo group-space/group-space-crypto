@@ -100,6 +100,16 @@ const sealedManifest = await e2ee.sealMediaManifest(
   MANIFEST_CONTEXT,
 );
 
+// --- purpose-bound wrap: randomized seal, pin the open ----------------------
+// The compatibility half is already covered by `wrappedSecret` above, which was
+// recorded before purposes existed and must keep opening with none given. This
+// records the other half: a wrap bound to a slot, which must keep opening under
+// that slot and no other.
+const BOUND_PURPOSE = "member:vector";
+const BOUND_SECRET_BYTES = pattern(32, 97);
+const BOUND_SECRET = b64(BOUND_SECRET_BYTES);
+const boundWrapped = await e2ee.wrapSecret(BOUND_SECRET_BYTES, PASSWORD, BOUND_PURPOSE);
+
 const pair = await e2ee.generateKeyPair();
 const GROUP_KEY = b64(pattern(32, 71));
 const grant = await e2ee.grantGroupKey(GROUP_KEY, pair.publicKey);
@@ -119,6 +129,12 @@ process.stdout.write(
         sealed: sealedManifest,
       },
       wrappedSecret: { password: PASSWORD, secret: SECRET, wrapped },
+      wrappedSecretWithPurpose: {
+        password: PASSWORD,
+        purpose: BOUND_PURPOSE,
+        secret: BOUND_SECRET,
+        wrapped: boundWrapped,
+      },
       sealedGrant: { groupKey: GROUP_KEY, recipient: pair, sealed: grant },
     },
     null,
