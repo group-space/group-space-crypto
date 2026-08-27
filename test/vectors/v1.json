@@ -5,7 +5,7 @@
   "fieldAead": [
     {
       "aad": "discussion.post.body",
-      "plaintext": "Can someone cover carpool Friday? \ud83d\ude97",
+      "plaintext": "Can someone cover carpool Friday? 🚗",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
         "nonce": "uj2H/Bkt3KtAiHsIXBCj0u5YKcIGaLys",
@@ -116,6 +116,18 @@
       "salt": "2LL9dz0WVa9nFdYvMxILYg==",
       "nonce": "TUKgWavI8cX+Jzs53f9zq7+gse1Nc4eY",
       "ciphertext": "Kcxo3tpe1Wu/98SUA5vPjcvJs2TNFo2S/uhj+y0cZtY37SFpTUex+LsQS5Uixpcf",
+      "ops": 2,
+      "mem": 67108864
+    }
+  },
+  "wrappedSecretWithPurpose": {
+    "password": "correct horse battery staple",
+    "purpose": "member-vector",
+    "secret": "YWhvdn2Ei5KZoKeutbzDytHY3+bt9AAHDhUcIyoxOD8=",
+    "wrapped": {
+      "salt": "wcP0QXzSpMh1wblwrmih0Q==",
+      "nonce": "ujwfzIwg5g4QsIDco6N3wvIumzfKII67",
+      "ciphertext": "W5OLdJMxyiS9wW+YdakPCig9DotyPeGuZletjfQmx9g5Y55tRG2EHUdEI6BeSFB4",
       "ops": 2,
       "mem": 67108864
     }

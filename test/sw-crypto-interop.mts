@@ -85,5 +85,35 @@ ok(
   "the worker rejects a manifest under the wrong file key",
 );
 
+// The worker re-implements the sanity checks, and nothing fed it anything but a
+// well-formed manifest. Two implementations that validate differently are two
+// implementations that disagree about which files are readable.
+async function sealRaw(value: unknown) {
+  return e2ee.encryptField(fileKey, JSON.stringify(value), "media.manifest:full");
+}
+for (const [value, label] of [
+  [{ bytes: 10, frames: 0 }, "zero frames"],
+  [{ bytes: -1, frames: 1 }, "a negative length"],
+  [{ bytes: 10, frames: 1.5 }, "a fractional frame count"],
+  [{ bytes: Number.NaN, frames: 1 }, "NaN as a length"],
+  [{ bytes: 10, frames: 5000 }, "frames that disagree with bytes"],
+  ["not an object", "a plaintext that is not an object"],
+  [null, "a plaintext that is null"],
+] as [unknown, string][]) {
+  ok(
+    swOpenMediaManifest(b64(fileKey), await sealRaw(value), "full") === null,
+    `the worker returns null for ${label}`,
+  );
+}
+// Its contract is null on any failure, never a throw: a worker declines, it
+// does not raise into an event handler nobody is awaiting.
+let threw = false;
+try {
+  swOpenMediaManifest(b64(fileKey), await e2ee.encryptField(fileKey, "{oops", "media.manifest:full"), "full");
+} catch {
+  threw = true;
+}
+ok(!threw, "the worker returns null rather than throwing on unparseable JSON");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

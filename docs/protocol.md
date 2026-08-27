@@ -80,6 +80,46 @@ version. New wraps use libsodium's `INTERACTIVE` limits (mobile-safe, ≈ 64 MB)
 old blobs open with whatever they recorded. Raising the defaults never breaks
 an existing wrap.
 
+### 4.1 The purpose tag
+
+A wrap can name the slot it belongs in. Without one, two blobs wrapped under a
+single passphrase are interchangeable: one account holding several membership
+private keys under one password is the case that matters, and swapping two of
+them hands the holder the wrong key in the right slot. Keys are random, so the
+result is a failure somewhere further down rather than a disclosure, which
+makes it a robustness problem and an unusually confusing one to diagnose.
+
+The tag is a caller-chosen string, a membership id or a role, and the library
+composes it. It must not be empty and must not contain a colon: the colon is
+the separator, so `("a:b", "c")` and `("a", "b:c")` would otherwise produce the
+same AAD and each blob would open in the other's slot. Both are refused.
+
+```
+ad = utf8("wrap.secret" ":" purpose)     when a purpose is given
+ad = none                                when it is not
+```
+
+Nothing about the `WrappedSecret` shape changes, and the tag is not stored: as
+in §5, both sides know the label from context. Naming no purpose behaves
+exactly as it did before purposes existed, which is what keeps every previously
+wrapped blob openable.
+
+A blob wrapped with a purpose does not open without one, and the reverse, so a
+caller upgrading old blobs attempts the purpose first, falls back to none, and
+re-wraps whatever it opened. That is a caller's decision and this library does
+not make it.
+
+**While that fallback is in place the binding provides no protection.** Nothing
+records whether a given blob was wrapped with a purpose, so a caller cannot
+tell one presented in the wrong slot from a legacy blob that never had one.
+Both fail the first attempt and both succeed on the second. A swap performed
+during the migration therefore opens the wrong key, which is the outcome the
+purpose exists to prevent. Keep the window short, and treat it as a migration
+step rather than a steady state.
+
+Callers must also finish migrating before considering a rollback: a
+purpose-bound blob does not open under a release that predates this section.
+
 ## 5. Field AEAD with context binding
 
 A text field sealed under the Group Key:
@@ -131,6 +171,15 @@ The AAD binds each frame to its **index within its context** (`"full:0"`,
 duplicated, or transplanted between files without the open failing. An empty
 file is one frame sealing zero bytes (24 + 0 + 16 = 40 bytes of ciphertext).
 
+A `context` must not be a bare integer, must not contain a colon, and must not
+begin with a label from the registry in `src/aad.ts`. The frame AAD carries no
+prefix of its own, so `<context>:<index>` shares a string space with the
+composed labels used elsewhere under the same key; a context drawn from outside
+that set keeps the two apart. This is a constraint on callers rather than
+something the format enforces, because contexts predate it and validating them
+now would refuse containers already written. The shipped contexts (`"full"`,
+`"thumb"`, and the avatar context) satisfy it.
+
 Range arithmetic over this geometry (`src/media-range.ts`) is pure integer
 math shared by the app, the service worker, and the tests: byte range of the
 plaintext → frame span of the ciphertext, and back.
@@ -157,12 +206,23 @@ written. An empty file is one frame, matching §6. The AAD carries the
 container's context, so a `full` manifest cannot be presented as a `thumb`.
 
 It is stored beside the container's wrapped file key and supplied by the
-caller at open time. Supplying it is **optional and additive**: a reader that
-passes it gets the completeness check, a reader that does not is exactly where
-it was before, and no stored container changes. Range reads are the reason the
-count lives in a manifest rather than in a marker on the final frame: a reader
-fetching bytes from the middle of a video legitimately never sees the last
-frame, and cannot be asked to require one.
+caller at open time. Range reads are the reason the count lives in a manifest
+rather than in a marker on the final frame: a reader fetching bytes from the
+middle of a video legitimately never sees the last frame, and cannot be asked
+to require one.
+
+Supplying it is **optional**, which keeps every stored container readable and
+is also the limit of what this buys. The manifest is stored in the same record
+as the container, so a party willing to remove trailing frames can remove the
+manifest along with them, and a reader with no manifest has no way to know one
+was ever written. Detection therefore holds only where the reader requires a
+manifest and can tell a missing one from a file that never had one. That is a
+caller's arrangement, not a property this format supplies on its own, and it is
+not yet in place: no caller passes a manifest today.
+
+Closing it means putting the figures somewhere a host cannot strip without
+breaking decryption outright, so that a missing manifest is indistinguishable
+from a broken file rather than from an ordinary one.
 
 ## 7. Recovery codes
 
@@ -184,8 +244,9 @@ The following can never change within format v1:
 - the base64 variant (§2),
 - the `WrappedSecret` and `SealedField` shapes (§4, §5),
 - every AAD label already in the registry (`src/aad.ts`); labels may be
-  **added**, never renamed or removed (`media.manifest`, §6.1, was added this
-  way and is now frozen on the same terms),
+  **added**, never renamed or removed (`media.manifest` in §6.1 and
+  `wrap.secret` in §4.1 were both added this way and are now frozen on the same
+  terms),
 - every constant in §6, and the frame layout,
 - the recovery alphabet and normalization (§7).
 

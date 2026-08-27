@@ -42,15 +42,18 @@ against, so each one narrows a defence rather than opening a new door.
 | ID | Severity | Reachable by | Finding | Status |
 | --- | --- | --- | --- | --- |
 | M1 | Medium | Host | Field ciphertexts are bound to a field type but not to a record, so a host can move one record's sealed field into another record and the client opens it without error | Open, unfixed |
-| M2 | Medium | Host or storage keys | The media container binds each frame's index but not the total frame count, so removing whole trailing frames yields a shorter file that decrypts without error | Open, unfixed |
+| M2 | Medium | Host or storage keys | The media container binds each frame's index but not the total frame count, so removing whole trailing frames yields a shorter file that decrypts without error | Partly addressed after v0.1.1: a sealed length manifest makes it detectable, but only where a caller requires one. See `docs/protocol.md` §6.1 |
 | M3 | Medium | Host or storage keys | Argon2id runs at `INTERACTIVE` cost for long-lived private keys, and no path re-wraps an existing blob at a higher cost | Open, unfixed |
 | M4 | Medium | Host | Group Key grants use anonymous sealed boxes and carry no proof of issuer, so a host can seal a key of its own choosing to a member | Open, unfixed |
-| L1 | Low | Host | `encryptChunk`/`decryptChunk` bind the chunk index but no context label, unlike the container path | Open, unfixed |
-| L2 | Low | Host | `WrappedSecret` is sealed with no AAD, so two blobs wrapped under the same passphrase are interchangeable | Open, unfixed |
-| L3 | Info | n/a | XChaCha20-Poly1305 is not key-committing; no current flow depends on key commitment | Open, accepted for now |
+| L1 | Low | Host | `encryptChunk`/`decryptChunk` bind the chunk index but no context label, unlike the container path | Fixed after v0.1.1: both helpers removed, unused |
+| L2 | Low | Host | `WrappedSecret` is sealed with no AAD, so two blobs wrapped under the same passphrase are interchangeable | Fixed after v0.1.1: optional purpose tag. See `docs/protocol.md` §4.1 |
+| L3 | Info | n/a | XChaCha20-Poly1305 is not key-committing; no current flow depends on key commitment | Accepted after v0.1.1, recorded in `docs/threat-model.md` |
 
-Nothing in this table is fixed as of `v0.1.1`. Statuses will move to "Fixed in
-vX.Y.Z" or "Accepted, see issue #N" as the work lands.
+Nothing was fixed as of `v0.1.1` itself. The status column tracks work landed
+since, on `main`, and no release carrying it has been cut yet. The finding text
+below each entry describes the code as it stood at `v0.1.1` and is left
+unedited; where a fix has since landed, the current behaviour is in
+`docs/protocol.md`.
 
 ### M1: Field ciphertexts are not bound to their record
 

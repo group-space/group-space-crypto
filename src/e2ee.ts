@@ -5,7 +5,7 @@ import {
   TAG_BYTES,
   FULL_FRAME_BYTES,
 } from "./media-format";
-import { MEDIA_MANIFEST_AAD } from "./aad";
+import { MEDIA_MANIFEST_AAD, WRAPPED_SECRET_AAD } from "./aad";
 
 // Re-exported so the many existing `from "./e2ee"` imports keep working; the
 // definitions live in media-format.ts, which the service worker can import
@@ -84,9 +84,41 @@ export async function randomBytes(n: number): Promise<Uint8Array> {
 // --- Passphrase-wrapped secrets (password → private key; recovery code → Group Key)
 
 /** Wrap an arbitrary symmetric secret under a passphrase (Argon2id + AEAD). */
+/**
+ * The AAD for a passphrase wrap, or null when the caller names no purpose.
+ *
+ * Absent has to mean exactly what it meant before this parameter existed,
+ * because every blob wrapped up to that point sealed with a null AAD and has to
+ * keep opening.
+ *
+ * `null` counts as absent alongside `undefined`. Consumers of a published
+ * package are not all TypeScript, and a caller reading an id from a record
+ * where it is nullable would otherwise seal under the literal
+ * `wrap.secret:null` and never open that blob again with the real id. Empty
+ * throws instead of being coerced, because a caller passing one meant to pass
+ * something.
+ */
+function wrapAad(
+  s: Awaited<ReturnType<typeof getSodium>>,
+  purpose: string | null | undefined,
+): Uint8Array | null {
+  if (purpose == null) return null;
+  if (purpose === "") throw new Error("wrapSecret: purpose must be a non-empty string, or absent");
+  // A colon is the separator, so a purpose containing one makes the composition
+  // ambiguous: ("a:b", "c") and ("a", "b:c") would produce the same AAD and the
+  // two blobs would open in each other's slot. Refusing it is cheaper than
+  // length-prefixing, and has to happen now: once a release writes blobs under
+  // this composition it is frozen. Compose with any other separator.
+  if (purpose.includes(":")) {
+    throw new Error("wrapSecret: purpose must not contain ':', which separates it from its label");
+  }
+  return s.from_string(`${WRAPPED_SECRET_AAD}:${purpose}`);
+}
+
 export async function wrapSecret(
   secret: Uint8Array,
   passphrase: string,
+  purpose?: string | null,
 ): Promise<WrappedSecret> {
   const s = await getSodium();
   const { ops, mem } = await argonDefaults();
@@ -100,7 +132,7 @@ export async function wrapSecret(
     s.crypto_pwhash_ALG_ARGON2ID13,
   );
   const nonce = s.randombytes_buf(s.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
-  const ct = s.crypto_aead_xchacha20poly1305_ietf_encrypt(secret, null, null, nonce, key);
+  const ct = s.crypto_aead_xchacha20poly1305_ietf_encrypt(secret, wrapAad(s, purpose), null, nonce, key);
   return {
     salt: await b64encode(salt),
     nonce: await b64encode(nonce),
@@ -114,6 +146,7 @@ export async function wrapSecret(
 export async function unwrapSecret(
   wrapped: WrappedSecret,
   passphrase: string,
+  purpose?: string | null,
 ): Promise<Uint8Array> {
   const s = await getSodium();
   const key = s.crypto_pwhash(
@@ -127,7 +160,7 @@ export async function unwrapSecret(
   return s.crypto_aead_xchacha20poly1305_ietf_decrypt(
     null,
     await b64decode(wrapped.ciphertext),
-    null,
+    wrapAad(s, purpose),
     await b64decode(wrapped.nonce),
     key,
   );
@@ -142,14 +175,35 @@ export async function generateKeyPair(): Promise<KeyPair> {
   return { publicKey: await b64encode(kp.publicKey), privateKey: await b64encode(kp.privateKey) };
 }
 
-/** Wrap a member's private key under their password (for portable login). */
-export async function wrapPrivateKey(privateKey: string, password: string): Promise<WrappedSecret> {
-  return wrapSecret(await b64decode(privateKey), password);
+/**
+ * Wrap a member's private key under their password (for portable login).
+ *
+ * `purpose` is the slot this blob belongs in, and one account holding several
+ * memberships is the case it exists for: without it those wraps are
+ * interchangeable, and a swapped pair unlocks the wrong key in the right place.
+ * A membership id is the obvious value. Omitting it wraps exactly as before.
+ */
+export async function wrapPrivateKey(
+  privateKey: string,
+  password: string,
+  purpose?: string | null,
+): Promise<WrappedSecret> {
+  return wrapSecret(await b64decode(privateKey), password, purpose);
 }
 
-/** Recover a member's private key from their password. Throws if wrong. */
-export async function unwrapPrivateKey(wrapped: WrappedSecret, password: string): Promise<string> {
-  return b64encode(await unwrapSecret(wrapped, password));
+/**
+ * Recover a member's private key from their password. Throws if wrong.
+ *
+ * A blob wrapped with a purpose does not open without it, and one wrapped
+ * without a purpose does not open with it. Callers migrating existing blobs
+ * therefore try the purpose first and fall back, then re-wrap what they opened.
+ */
+export async function unwrapPrivateKey(
+  wrapped: WrappedSecret,
+  password: string,
+  purpose?: string | null,
+): Promise<string> {
+  return b64encode(await unwrapSecret(wrapped, password, purpose));
 }
 
 // --- Group key + granting (sealed boxes) ------------------------------------
@@ -459,10 +513,27 @@ export interface MediaManifest {
  * every container has at least one frame.
  */
 export function mediaManifestFor(bytes: Uint8Array): MediaManifest {
-  return {
-    bytes: bytes.length,
-    frames: Math.max(1, Math.ceil(bytes.length / MEDIA_CHUNK_SIZE)),
-  };
+  return mediaManifestForLength(bytes.length);
+}
+
+/**
+ * The manifest for a plaintext of `length` bytes, without holding the bytes.
+ *
+ * The streaming writers take a `Blob` and never materialize it, so they cannot
+ * call {@link mediaManifestFor}. Without this they would each recompute the
+ * frame count from `blob.size`, which is a second encoder: get it wrong and the
+ * manifest permanently rejects a container that was written correctly.
+ */
+export function mediaManifestForLength(length: number): MediaManifest {
+  if (!Number.isSafeInteger(length) || length < 0) {
+    throw new Error("media manifest: length is not a valid plaintext size");
+  }
+  return { bytes: length, frames: framesFor(length) };
+}
+
+/** Frames a container of `length` plaintext bytes holds. Empty is still one. */
+function framesFor(length: number): number {
+  return Math.max(1, Math.ceil(length / MEDIA_CHUNK_SIZE));
 }
 
 /**
@@ -487,14 +558,28 @@ export async function openMediaManifest(
   context: string,
 ): Promise<MediaManifest> {
   const json = await decryptField(fileKey, sealed, `${MEDIA_MANIFEST_AAD}:${context}`);
-  const parsed = JSON.parse(json) as MediaManifest;
+  let parsed: MediaManifest;
+  try {
+    parsed = JSON.parse(json) as MediaManifest;
+  } catch {
+    throw new Error("media manifest: not valid JSON");
+  }
+  if (parsed === null || typeof parsed !== "object") {
+    throw new Error("media manifest: not an object");
+  }
   if (!Number.isSafeInteger(parsed.bytes) || parsed.bytes < 0) {
     throw new Error("media manifest: bytes is not a valid length");
   }
   if (!Number.isSafeInteger(parsed.frames) || parsed.frames < 1) {
     throw new Error("media manifest: frames is not a valid count");
   }
-  return parsed;
+  // frames is fully determined by bytes, in every encoder here. Checking the
+  // pair makes the manifest self-validating: a figure that disagrees with
+  // itself is rejected before it can reject a container that was fine.
+  if (parsed.frames !== framesFor(parsed.bytes)) {
+    throw new Error("media manifest: frames does not match bytes");
+  }
+  return { bytes: parsed.bytes, frames: parsed.frames };
 }
 
 export async function decryptBytes(
@@ -569,16 +654,18 @@ export async function generateRecoveryCode(): Promise<string> {
 export async function wrapGroupKeyForRecovery(
   groupKey: string,
   recoveryCode: string,
+  purpose?: string | null,
 ): Promise<WrappedSecret> {
-  return wrapSecret(await b64decode(groupKey), normalizeRecoveryCode(recoveryCode));
+  return wrapSecret(await b64decode(groupKey), normalizeRecoveryCode(recoveryCode), purpose);
 }
 
 /** Recover the Group Key from the recovery code. Throws if the code is wrong. */
 export async function openGroupKeyWithRecovery(
   wrapped: WrappedSecret,
   recoveryCode: string,
+  purpose?: string | null,
 ): Promise<string> {
-  return b64encode(await unwrapSecret(wrapped, normalizeRecoveryCode(recoveryCode)));
+  return b64encode(await unwrapSecret(wrapped, normalizeRecoveryCode(recoveryCode), purpose));
 }
 
 /** Accept the code regardless of case/dashes/whitespace the user re-typed. */
