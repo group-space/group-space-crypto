@@ -496,13 +496,37 @@ ok(
 
 console.log("recovery code:");
 const code = await e2ee.generateRecoveryCode();
-ok(/^[A-Z0-9]{5}(-[A-Z0-9]{5}){7}$/.test(code), `code format is 8x5 groups (${code})`);
+ok(/^[A-Z0-9]{5}(-[A-Z0-9]{5}){3}$/.test(code), `code format is 4x5 groups (${code})`);
+ok(code.replace(/-/g, "").length === 20, `20 characters, ~100 bits (${code.length} with dashes)`);
+ok(!/[ILOU]/.test(code), "no I, L, O or U, which are the characters people mis-transcribe");
 const rWrap = await e2ee.wrapGroupKeyForRecovery(gk, code);
 ok(
   (await e2ee.openGroupKeyWithRecovery(rWrap, code.toLowerCase().replace(/-/g, " "))) === gk,
   "recovers the Group Key even with re-typed case/spacing",
 );
 await throws(() => e2ee.openGroupKeyWithRecovery(rWrap, "WRONG-CODE"), "wrong recovery code throws");
+
+// A code is only ever a passphrase into wrapSecret, so shortening what we MINT
+// must not change what we can OPEN. Codes issued before this change are printed,
+// saved in password managers, and are the only way back into groups created
+// years earlier. Driven with a real 8x5 code rather than trusted.
+const legacyCode = "TMFZJ-RV090-QCN07-Z7A4X-8H3KP-QW2NE-RT6YB-XC4VD";
+const legacyWrap = await e2ee.wrapGroupKeyForRecovery(gk, legacyCode);
+ok(
+  (await e2ee.openGroupKeyWithRecovery(legacyWrap, legacyCode)) === gk,
+  "a legacy 8x5 code still wraps and opens",
+);
+ok(
+  (await e2ee.openGroupKeyWithRecovery(legacyWrap, legacyCode.toLowerCase())) === gk,
+  "and still tolerates re-typed case",
+);
+
+// Uniqueness, cheaply: 200 draws with no collision. A generator that lost its
+// entropy source and returned a constant would still satisfy the format check
+// above, and would hand every group the same recovery code.
+const seen = new Set<string>();
+for (let i = 0; i < 200; i++) seen.add(await e2ee.generateRecoveryCode());
+ok(seen.size === 200, `200 codes are 200 distinct codes (${seen.size})`);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

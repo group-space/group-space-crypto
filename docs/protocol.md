@@ -226,12 +226,31 @@ from a broken file rather than from an ordinary one.
 
 ## 7. Recovery codes
 
-A recovery code is 40 characters from the 32-character alphabet
-`ABCDEFGHJKMNPQRSTVWXYZ0123456789` (no I, L, O, U), displayed as 8 groups of 5
-separated by dashes, for 200 bits. Before use it is **normalized**: uppercased,
+A recovery code is 20 characters from the 32-character alphabet
+`ABCDEFGHJKMNPQRSTVWXYZ0123456789` (no I, L, O, U), displayed as 4 groups of 5
+separated by dashes, for 100 bits. Before use it is **normalized**: uppercased,
 and every character outside `[A-Z0-9]` removed, so re-typing with different
 dashes or case still opens the wrap. The normalized string is the passphrase
 for a standard `WrappedSecret` (§4) over the protected secret.
+
+Codes minted before this shape was adopted were 40 characters over the same
+alphabet, for 200 bits. They remain valid indefinitely and require no
+migration: a code is only ever a passphrase into `wrapSecret`, so the length of
+what is *minted* has no bearing on what can be *opened*. Implementations MUST
+accept a normalized code of any length.
+
+The shortening is deliberate rather than a relaxation. 100 bits places an
+offline search against a stolen `WrappedSecret` beyond reach by any margin that
+matters, and the remaining 100 bits were paid for in transcription: a recovery
+code is read off a screen, written down, kept for years, and typed back at the
+worst moment its holder has had. A code long enough to be mis-saved is, in
+practice, a code that was never saved.
+
+The KDF parameters are deliberately not raised alongside it. The same
+`WrappedSecret` wrapper protects membership keys that a phone unwraps on every
+session, and its parameters are chosen so that unwrap stays within a mobile
+browser's memory budget (§4). At 100 bits of uniform entropy the KDF is not the
+binding constraint on this attack.
 
 The code is generated client-side, shown once, and never sent to the server.
 There is no server-side reset path; that is the point.
