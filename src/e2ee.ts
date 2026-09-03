@@ -635,17 +635,50 @@ export async function decryptBytes(
 
 // --- Recovery code ----------------------------------------------------------
 
+/** Characters in a recovery code, and bits each one carries. */
+const RECOVERY_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ0123456789"; // Crockford-ish, no I/L/O/U
+/** Groups of five, joined by dashes. Four groups is 20 characters, ~100 bits. */
+const RECOVERY_GROUPS = 4;
+const RECOVERY_CHARS = RECOVERY_GROUPS * 5;
+
 /**
- * A human-transcribable recovery code: 8 groups of 5 base32 chars (~200 bits).
- * Shown once to the admin at group setup; wraps a copy of the Group Key.
+ * A human-transcribable recovery code: 4 groups of 5 base32 chars (~100 bits).
+ * Shown once when a group is created; wraps a copy of the Group Key.
+ *
+ * ## Why this is shorter than it was
+ *
+ * It used to be 8 groups, ~200 bits, and length is not free. A recovery code is
+ * read off a screen, written down, carried for years, and typed back in at the
+ * worst moment somebody has had with the product. Forty characters is long
+ * enough that people mis-save it, and a mis-saved code is indistinguishable
+ * from no code at all.
+ *
+ * 100 bits is not a compromise. The attack this defends is an offline guess
+ * against a stolen `WrappedSecret`, and 2^100 is beyond reach by any margin
+ * that matters: at a trillion guesses a second it outlasts the age of the
+ * universe by an order of magnitude. The remaining 100 bits were buying
+ * nothing and costing transcription errors.
+ *
+ * Existing codes are unaffected. A code is only ever a passphrase into
+ * `wrapSecret`, so blobs wrapped under a 40-character code keep opening with
+ * it; only newly minted codes are shorter.
+ *
+ * The KDF is deliberately NOT raised alongside this. `argonDefaults` sits at
+ * INTERACTIVE because the same wrapper protects membership keys that a phone
+ * unwraps on every session, and MODERATE's memory cost is what that comment
+ * warns about. At 100 bits of uniform entropy the KDF is not the binding
+ * constraint anyway: strengthening it would slow every unlock to make an
+ * already-impossible search slightly more impossible.
  */
 export async function generateRecoveryCode(): Promise<string> {
-  const alphabet = "ABCDEFGHJKMNPQRSTVWXYZ0123456789"; // Crockford-ish, no I/L/O/U
-  const bytes = await randomBytes(40);
+  // `% 32` over a byte is unbiased because 256 is an exact multiple of 32. That
+  // is a property of these two numbers, not a general one, so it is stated here
+  // rather than assumed by anyone changing the alphabet.
+  const bytes = await randomBytes(RECOVERY_CHARS);
   let out = "";
-  for (let i = 0; i < 40; i++) {
-    out += alphabet[bytes[i] % alphabet.length];
-    if (i % 5 === 4 && i !== 39) out += "-";
+  for (let i = 0; i < RECOVERY_CHARS; i++) {
+    out += RECOVERY_ALPHABET[bytes[i] % RECOVERY_ALPHABET.length];
+    if (i % 5 === 4 && i !== RECOVERY_CHARS - 1) out += "-";
   }
   return out;
 }
