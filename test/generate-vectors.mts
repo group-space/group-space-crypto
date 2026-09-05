@@ -44,6 +44,10 @@ for (const [aad, plaintext] of [
   ["discussion.post.body", "Can someone cover carpool Friday? \u{1F697}"],
   ["event.title", "Spring picnic"],
   ["push.sender", "Alice Chen"],
+  ["group.name", "Oak Lane Neighbors"],
+  ["member.displayName", "Jordan Lee"],
+  ["file.name", "budget-2026.pdf"],
+  ["file.meta", "{\"mime\":\"application/pdf\"}"],
   ["", "no context at all"],
 ] as const) {
   fields.push({ aad, plaintext, key: FIELD_KEY, sealed: await e2ee.encryptField(FIELD_KEY, plaintext, aad) });
