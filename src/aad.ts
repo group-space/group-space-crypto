@@ -84,3 +84,24 @@ export const MEDIA_MANIFEST_AAD = "media.manifest";
 // purpose keeps the original null-AAD behaviour exactly, which is what lets
 // every blob wrapped before this existed keep opening.
 export const WRAPPED_SECRET_AAD = "wrap.secret";
+
+// Group identity fields, sealed under the Group Key so the server holds only
+// ciphertext for the group's own name, tagline and description. These bind
+// each ciphertext to its field the same way the album and event labels above
+// do; a deployment that seals these renders them client-side and keeps the
+// plaintext columns empty.
+export const GROUP_NAME_AAD = "group.name";
+export const GROUP_TAGLINE_AAD = "group.tagline";
+export const GROUP_DESCRIPTION_AAD = "group.description";
+
+// A member's display name, sealed under the Group Key. Deliberately distinct
+// from PUSH_SENDER_AAD above: that label binds a name composed INTO a push
+// payload, this one binds the member record's own stored name, and the two
+// must never be interchangeable across their slots.
+export const MEMBER_DISPLAY_NAME_AAD = "member.displayName";
+
+// Encrypted file storage. A file's name is content, so it is sealed like any
+// field; the metadata blob seals {mime, note?} as one JSON value so the type
+// and any note cannot be mixed across files.
+export const FILE_NAME_AAD = "file.name";
+export const FILE_META_AAD = "file.meta";
