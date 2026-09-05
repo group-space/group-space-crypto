@@ -84,3 +84,26 @@ export const MEDIA_MANIFEST_AAD = "media.manifest";
 // purpose keeps the original null-AAD behaviour exactly, which is what lets
 // every blob wrapped before this existed keep opening.
 export const WRAPPED_SECRET_AAD = "wrap.secret";
+
+// Group identity, sealed for the Zero product (app issue #656; boundary audit
+// section 1). In Zero the group's own name, tagline and description are sealed
+// under the Group Key and rendered by decrypt islands; the server holds only
+// ciphertext and an opaque id. The parent-market product keeps these plaintext
+// (its join screen renders them before a viewer holds any key), so presence of
+// these labels says nothing about which mode an instance runs.
+export const GROUP_NAME_AAD = "group.name";
+export const GROUP_TAGLINE_AAD = "group.tagline";
+export const GROUP_DESCRIPTION_AAD = "group.description";
+
+// A member's display name, sealed under the Group Key (app issue #694;
+// boundary audit section 2). Distinct from PUSH_SENDER_AAD above on purpose:
+// that label binds a name composed INTO a push payload, this one binds the
+// member row's own stored name, and the two must never be replayable into
+// each other's slots.
+export const MEMBER_DISPLAY_NAME_AAD = "member.displayName";
+
+// The encrypted group file library (app issue #647). A file's name IS content,
+// so it is sealed like any field; the metadata blob seals {mime, note?} as one
+// JSON value so type and note cannot be mixed across files.
+export const FILE_NAME_AAD = "file.name";
+export const FILE_META_AAD = "file.meta";

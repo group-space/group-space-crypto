@@ -8,8 +8,8 @@
       "plaintext": "Can someone cover carpool Friday? 🚗",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
-        "nonce": "uj2H/Bkt3KtAiHsIXBCj0u5YKcIGaLys",
-        "ciphertext": "o/FH1TH7ULi8lLc+sVg8Om8KNBkcUUlqyHpuwRbOId+bmN/YAjhNsCpDIhXtu+8KeWD27dDO"
+        "nonce": "Ey/Ln1DrujBA6a1BCbbSF2QmxuzrYFS9",
+        "ciphertext": "jNcSwQVWlmQvurOH2xhtlLR/Rt76CNTqSijzrXPyZJbUgwtJsDX8OA83GLcKvOOTUNwQv9s8"
       }
     },
     {
@@ -17,8 +17,8 @@
       "plaintext": "Spring picnic",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
-        "nonce": "iFqMqpSU7cJv/DsQit4rPexcqpy/61H+",
-        "ciphertext": "XYGNTnKhu+qre9xliQLr/hP8zsqngq+wiWGzPTA="
+        "nonce": "Fc+xQPoufbjgSfbT9rBCsUbFUkhWKDV4",
+        "ciphertext": "4O45Rf8scvIZ4RcCbgeXtZLWjglXsMqsvaoEXk8="
       }
     },
     {
@@ -26,8 +26,44 @@
       "plaintext": "Alice Chen",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
-        "nonce": "rGr+v3EmNhB6je6POZky/dXLGhABvzze",
-        "ciphertext": "cA7HhzjlrHMsG8a+QbUUPNDPEYDv1tg/Rv0="
+        "nonce": "JCq74s9dJmw34gMGOCUy3Yjd5vZhhbpv",
+        "ciphertext": "70FdVnwo/DaU8q5WvYWkxXTZKY+mSh9ooKg="
+      }
+    },
+    {
+      "aad": "group.name",
+      "plaintext": "Field Unit 12",
+      "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
+      "sealed": {
+        "nonce": "E6fgnxoC5NMJxCaCZYlh8o/g2rbEnpf2",
+        "ciphertext": "23LQFKAm4zVNiORUuTDRtux+vOt/dX2WmL3UsIg="
+      }
+    },
+    {
+      "aad": "member.displayName",
+      "plaintext": "R. Osei",
+      "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
+      "sealed": {
+        "nonce": "iyqmSBbSDjuvLG94MD/7QCCADJeG3R5X",
+        "ciphertext": "Cpelv8voLT6IoFg7lUImi13UwFI4Unk="
+      }
+    },
+    {
+      "aad": "file.name",
+      "plaintext": "minutes-2026-09.pdf",
+      "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
+      "sealed": {
+        "nonce": "I3+kdCM08wwFHOSo6OhNCF3cpsE6CLqR",
+        "ciphertext": "YipxMofE5zOAY5epDu6gyQsr4m4TrJbrHGtX8vZvyZH1J3A="
+      }
+    },
+    {
+      "aad": "file.meta",
+      "plaintext": "{\"mime\":\"application/pdf\"}",
+      "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
+      "sealed": {
+        "nonce": "mS4K9W2P4arG3BhJ7zxuXCVH5ZOMTyVx",
+        "ciphertext": "47D3o/NmjZunddGsBxPGKewMLVKAFdVxZnUv5bJlUkJeM5mq56H+chY1"
       }
     },
     {
@@ -35,8 +71,8 @@
       "plaintext": "no context at all",
       "key": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw=",
       "sealed": {
-        "nonce": "lTPoUo9wtJn/MhsRlC49SMSTW/7IdAo7",
-        "ciphertext": "fcYrQ3ezEaUW4zY3FHgIKgGpsrHspD9BGlkiqobWSE8W"
+        "nonce": "LXt/EuX4GuCJmQo03IkvK8VLtgfBOma+",
+        "ciphertext": "QAsnCfSXzR7g40FWtMOVj7Ddr+AF06gXImY0TLFYwPTv"
       }
     }
   ],
@@ -105,17 +141,17 @@
       "frames": 3
     },
     "sealed": {
-      "nonce": "I8DQhnh+eOLh3rfiJ945oNUUOB3tfP5z",
-      "ciphertext": "fsUUwigK7BTx1HWFMmmHPzJBMbYRPt0kpsu79b8rU50RmbxYBUS4IH9hyQ=="
+      "nonce": "CgSZ7s7D8ezTUVq/XGAy/koEKUX4v8Nb",
+      "ciphertext": "iQtimnIRDnrOEgBt9NOIrn7i7Nqy/5xEl6+/AFCqOqaUarEQrLZmbY4/Lg=="
     }
   },
   "wrappedSecret": {
     "password": "correct horse battery staple",
     "secret": "NTxDSlFYX2ZtdHuCiZCXnqWss7rByM/W3eTr8vkFDBM=",
     "wrapped": {
-      "salt": "2LL9dz0WVa9nFdYvMxILYg==",
-      "nonce": "TUKgWavI8cX+Jzs53f9zq7+gse1Nc4eY",
-      "ciphertext": "Kcxo3tpe1Wu/98SUA5vPjcvJs2TNFo2S/uhj+y0cZtY37SFpTUex+LsQS5Uixpcf",
+      "salt": "004MlCDKLh+ltZNnbe1zlQ==",
+      "nonce": "ijkj3rMnRdp0uq2PaOzgnWFiDl+r2HLa",
+      "ciphertext": "rC4ipq3uSkX/iFBmKd/4U934aHuZj1QjZCYJMUEcZ8Wn6H4tQ8/LtoTt3UpkUGlv",
       "ops": 2,
       "mem": 67108864
     }
@@ -125,9 +161,9 @@
     "purpose": "member-vector",
     "secret": "YWhvdn2Ei5KZoKeutbzDytHY3+bt9AAHDhUcIyoxOD8=",
     "wrapped": {
-      "salt": "wcP0QXzSpMh1wblwrmih0Q==",
-      "nonce": "ujwfzIwg5g4QsIDco6N3wvIumzfKII67",
-      "ciphertext": "W5OLdJMxyiS9wW+YdakPCig9DotyPeGuZletjfQmx9g5Y55tRG2EHUdEI6BeSFB4",
+      "salt": "MjsJZvB5dbTU8tc+X3qXTg==",
+      "nonce": "2IPXkTOma3vJkLcC+/eN8nH3TmFGq9x5",
+      "ciphertext": "kQaO9X/WKOHHokCrcFZvi1PyYCOOIXGqU/DMVYM2wlf4D7dVMYjC/MXrdjbeOuuh",
       "ops": 2,
       "mem": 67108864
     }
@@ -135,9 +171,9 @@
   "sealedGrant": {
     "groupKey": "R05VXGNqcXh/ho2Um6KpsLe+xczT2uHo7/YCCRAXHiU=",
     "recipient": {
-      "publicKey": "aesRZGASxvtx8n0WTOJf/j0bSRMNRPbqowQ3x5AOE0g=",
-      "privateKey": "kWCJ8R997W9tbfZe41M/kbSddtOArdgKjPyWRo4V8MI="
+      "publicKey": "Ir0hzZtSbRni/7CuYuI8h5uzQglpVZwBct1Td0wcgjY=",
+      "privateKey": "tpJLMPW2BdoL/PdBMLiFANKJ4C240zXGIiaeHheFgZ4="
     },
-    "sealed": "tSQFNotEV72Knj5c+hyVJwx5o0ttjO/q5RwPGhZrx2aH+GE10tdH4mn08MTPIBkvo9r4wyEHYAUBkBbHaQpMjR+DNYq+vCqGK7fpf7QTlaw="
+    "sealed": "I8CXDiyeLwHjdEN+vDCSe7rYKzrCqLS1cGGliy0se13vuhdNzEzifH9wCTkWsxB8/hK/v6TszRvxNH0YTSj49mycp1QiOjtwIAjGwmOp2rk="
   }
 }
