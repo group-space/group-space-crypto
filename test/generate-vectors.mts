@@ -48,6 +48,7 @@ for (const [aad, plaintext] of [
   ["member.displayName", "Jordan Lee"],
   ["file.name", "budget-2026.pdf"],
   ["file.meta", "{\"mime\":\"application/pdf\"}"],
+  ["folder.name", "Witness statements"],
   ["", "no context at all"],
 ] as const) {
   fields.push({ aad, plaintext, key: FIELD_KEY, sealed: await e2ee.encryptField(FIELD_KEY, plaintext, aad) });

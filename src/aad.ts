@@ -105,3 +105,8 @@ export const MEMBER_DISPLAY_NAME_AAD = "member.displayName";
 // and any note cannot be mixed across files.
 export const FILE_NAME_AAD = "file.name";
 export const FILE_META_AAD = "file.meta";
+
+// A folder's name in encrypted file storage. A folder name is content just like
+// a file name, and sealing it under its own label keeps a sealed folder name
+// from being interchangeable with a file name across their slots.
+export const FOLDER_NAME_AAD = "folder.name";
